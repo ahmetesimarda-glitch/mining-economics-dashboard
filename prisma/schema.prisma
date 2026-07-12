@@ -1,0 +1,238 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/mining_economics_dashboard/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model MiningProject {
+  id              String   @id @default(cuid())
+  name            String
+  mineType        String
+  miningMethod    String   @default("openPit")
+  location        String   @default("")
+  status          String   @default("active")
+  projectLifeYears Int     @default(30)
+  discountRate    Float    @default(5.82)
+  taxRate         Float    @default(22.0)
+  royaltyRate     Float    @default(4.0)
+  creditRate      Float    @default(4.0)
+  creditYears     Int      @default(10)
+  currency        String   @default("USD")
+
+  // Currency & Energy
+  exchangeRate       Float    @default(1.0)
+  manualExchangeRate Boolean  @default(false)
+  fuelPricePerLiter  Float    @default(0)
+  electricityUnitPrice Float  @default(0)
+  explosiveUnitPrice Float    @default(0)
+
+  // Reserves & Capacity
+  totalReserves      Float    @default(0)
+  maxAnnualCapacity  Float    @default(0)
+  oreGrade           Float    @default(0)
+  oreGradeUnit       String   @default("%")
+
+  // Revenue params
+  unitPrice       Float    @default(75.0)
+  annualProduction Float   @default(2.0)
+  productionUnit  String   @default("Mt")
+  plantProcessingRate Float @default(35.0)
+
+  // CAPEX
+  equipmentCost   Float    @default(0)
+  facilityCost    Float    @default(0)
+  infrastructureCost Float @default(0)
+  contingencyRate Float    @default(10.0)
+  totalCapex      Float    @default(0)
+
+  // OPEX (annual)
+  fuelCost        Float    @default(0)
+  personnelCost   Float    @default(0)
+  maintenanceCost Float    @default(0)
+  explosivesCost  Float    @default(0)
+  tireCost        Float    @default(0)
+  strippingCost   Float    @default(0)
+  otherOpex       Float    @default(0)
+  totalOpex       Float    @default(0)
+
+  // Other costs
+  forestCost      Float    @default(0)
+  landCost        Float    @default(0)
+  rehabilitationCost Float @default(0)
+  annualStrippingVolume Float @default(0)
+  strippingUnitCost Float  @default(1.05)
+  contractorStrippingCost Float @default(0)
+  plantOperatingCost Float @default(0)
+
+  // Depreciation
+  equipmentDepLife Int     @default(6)
+  facilityDepLife  Int     @default(15)
+  depreciationMethod String @default("linear")
+  equipmentRenewalEnabled Boolean @default(true)
+  equipmentRenewalCycleYears Int @default(10)
+
+  // Environmental
+  waterConsumptionDaily  Float    @default(0)
+  rehabilitationAreaHa   Float    @default(0)
+  rehabilitationCostPerHa Float   @default(0)
+
+  // Financing
+  loanAmount         Float    @default(0)
+  loanInterestRate   Float    @default(0)
+  loanTermYears      Int      @default(0)
+  equityRatio        Float    @default(100)
+
+  // Location coordinates
+  latitude           Float    @default(0)
+  longitude          Float    @default(0)
+
+  // Results (calculated)
+  npv             Float    @default(0)
+  irr             Float    @default(0)
+  paybackPeriod   Float    @default(0)
+  breakevenPrice  Float    @default(0)
+  totalRevenue    Float    @default(0)
+  totalCost       Float    @default(0)
+  byProductRevenue Float   @default(0)
+  customCashFlows  Boolean @default(false)
+
+  cashFlows       CashFlowYear[]
+  capexItems      CapexItem[]
+  opexItems       OpexItem[]
+  equipments      Equipment[]
+  personnels      Personnel[]
+  byProducts      ByProduct[]
+  methodCosts     MethodSpecificCost[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+}
+
+model CashFlowYear {
+  id          String  @id @default(cuid())
+  projectId   String
+  project     MiningProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  year        Int
+  revenue     Float   @default(0)
+  opex        Float   @default(0)
+  depreciation Float  @default(0)
+  taxPayment  Float   @default(0)
+  royalty     Float   @default(0)
+  creditPayment Float @default(0)
+  creditInterest Float @default(0)
+  netCashFlow Float   @default(0)
+  cumulativeCashFlow Float @default(0)
+  discountedCashFlow Float @default(0)
+
+  @@unique([projectId, year])
+  @@index([projectId])
+}
+
+model CapexItem {
+  id          String  @id @default(cuid())
+  projectId   String
+  project     MiningProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  category    String  @default("equipment")
+  quantity    Int     @default(1)
+  spareQuantity Int   @default(0)
+  unitCost    Float   @default(0)
+  totalCost   Float   @default(0)
+
+  @@index([projectId])
+}
+
+model OpexItem {
+  id          String  @id @default(cuid())
+  projectId   String
+  project     MiningProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  category    String  @default("other")
+  annualCost  Float   @default(0)
+  unit        String  @default("USD/yıl")
+
+  @@index([projectId])
+}
+
+model Equipment {
+  id              String  @id @default(cuid())
+  projectId       String
+  project         MiningProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  machineType     String
+  model           String  @default("")
+  tonnageCapacity String  @default("")
+  quantity        Int     @default(1)
+  spareQuantity   Int     @default(0)
+  fuelConsumption Float   @default(0)
+  maintenanceCost Float   @default(0)
+  unitCost        Float   @default(0)
+  totalCost       Float   @default(0)
+  isCustom        Boolean @default(false)
+
+  // Detailed technical parameters
+  equipmentCategory   String   @default("general")
+  dailyWorkHours      Float    @default(8)
+  maintenancePeriodHours Int   @default(500)
+  operatorCount       Int      @default(1)
+  powerType           String   @default("diesel")
+  hourlyFuelConsumption Float  @default(0)
+  productionImpact    Float    @default(0)
+
+  // Category-specific fields
+  drillCapacity       Float    @default(0)
+  holeDiameter        Float    @default(0)
+  maxDrillDepth       Float    @default(0)
+  bucketVolume        Float    @default(0)
+  transportCapacity   Float    @default(0)
+  loadingCapacity     Float    @default(0)
+  crushingCapacity    Float    @default(0)
+  gallerySuitability  String   @default("")
+
+  @@index([projectId])
+}
+
+model Personnel {
+  id            String  @id @default(cuid())
+  projectId     String
+  project       MiningProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  role          String
+  count         Int     @default(1)
+  monthlySalary Float   @default(0)
+  annualCost    Float   @default(0)
+  isCustom      Boolean @default(false)
+
+  @@index([projectId])
+}
+
+model ByProduct {
+  id              String  @id @default(cuid())
+  projectId       String
+  project         MiningProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name            String
+  annualProduction Float  @default(0)
+  productionUnit  String  @default("ton")
+  unitPrice       Float   @default(0)
+  priceUnit       String  @default("USD/ton")
+  totalRevenue    Float   @default(0)
+
+  @@index([projectId])
+}
+
+model MethodSpecificCost {
+  id          String  @id @default(cuid())
+  projectId   String
+  project     MiningProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  category    String  @default("other")
+  value       Float   @default(0)
+  unit        String  @default("MUSD")
+
+  @@index([projectId])
+}
