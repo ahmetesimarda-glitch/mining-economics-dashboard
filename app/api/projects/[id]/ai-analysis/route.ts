@@ -126,7 +126,7 @@ export async function POST(
     };
 
     // Build benchmark data
-    const benchmarkData = otherProjects.map((p) => ({
+    const benchmarkData = otherProjects.map((p: any) => ({
       name: p.name,
       mineType: p.mineType,
       miningMethod: p.miningMethod,
