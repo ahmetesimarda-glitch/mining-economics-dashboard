@@ -244,34 +244,43 @@ model MethodSpecificCost {
 // =============================================================================
 model EquipmentCatalogItem {
   id        String @id @default(cuid())
-  /// Stable business key for idempotent seeds (e.g. "truck-cat-770g")
+  /// Stable business key for idempotent seeds (e.g. "truck-caterpillar-777g")
   code      String @unique
 
   // --- General ---
   manufacturer String @default("")
   model        String
-  category     String // truck | excavator | loader | dozer | grader | drill | underground | crusher | support | general
+  category     String // truck | excavator | loader | dozer | drill | undergroundTruck | undergroundLoader | jumbo | …
   description  String @default("")
+  imageUrl     String @default("")
 
-  // --- Technical ---
+  // --- Technical (nullable = unknown / not published; do not invent values) ---
   capacityLabel       String @default("") // free-text capacity / class label
-  payloadTons         Float  @default(0)
-  bucketCapacityM3    Float  @default(0)
-  enginePowerKw       Float  @default(0)
-  operatingWeightTons Float  @default(0)
+  payloadTons         Float?
+  bucketCapacityM3    Float?
+  enginePowerKw       Float?
+  operatingWeightTons Float?
+  fuelConsumptionLph  Float?
+  fuelTankCapacityL   Float?
 
-  // --- Economic ---
-  purchasePriceUsd       Float @default(0)
-  fuelConsumptionLph     Float @default(0)
-  usefulLifeYears        Float @default(10)
-  availabilityPct        Float @default(85)
-  maintenanceCostUsdYear Float @default(0)
-  powerType              String @default("diesel") // diesel | electric | hybrid
-
-  // --- Extensibility (additive fields without forced migrations) ---
-  extraSpecs Json?
+  // --- Economic (nullable where unknown; isPriceEstimated flags indicative list prices) ---
+  purchasePriceUsd       Float?
+  usefulLifeYears        Float?  @default(10)
+  availabilityPct        Float?  @default(85)
+  maintenanceCostUsdYear Float?
+  isPriceEstimated       Boolean @default(false)
+  powerType              String  @default("diesel") // diesel | electric | hybrid
 
   // --- Metadata ---
+  oemWebsite    String @default("")
+  country       String @default("")
+  notes         String @default("")
+  /// Comma-separated aliases for search (e.g. "CAT,Caterpillar")
+  searchAliases String @default("")
+
+  // --- Extensibility ---
+  extraSpecs Json?
+
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())

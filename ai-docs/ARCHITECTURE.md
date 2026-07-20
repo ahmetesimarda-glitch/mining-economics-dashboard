@@ -49,7 +49,7 @@ The key architectural rule is that **business logic never imports Prisma or `nex
 - **`components/`** — reusable React components: UI primitives under `components/ui/` (shadcn/Radix-based), plus feature components (charts, forms, maps, panels). Prefer extending these over creating new primitives.
 - **`lib/`** — framework-agnostic logic: `calculations.ts` (economic engine), `prisma.ts` (DB client), `market-reference.ts` (catalogs/constants), `master-data/` (`types.ts`, `mapper.ts`, `validation.ts`, seed builders), `i18n/translations.ts` (TR/EN strings), utility helpers.
 - **`app/master-data/`** — Master Data page shells (Equipment Catalog first).
-- **`components/master-data/`** — reusable Master Data UI pieces (`EquipmentTable`, `EquipmentFilters`, `EquipmentDialog`, …).
+- **`components/master-data/`** — reusable Master Data UI pieces (`EquipmentTable`, `EquipmentCardGrid`, `EquipmentFilters`, `EquipmentDetailDrawer`, `EquipmentDialog`, …).
 - **`prisma/`** — `schema.prisma` (single source of truth for the data model). See `DATABASE.md`.
 - **`scripts/`** — operational scripts: `seed.ts` and `safe-seed.ts` (idempotent seeding).
 - **`hooks/`** — shared React hooks (e.g. `use-toast`).

@@ -11,6 +11,9 @@ export const EQUIPMENT_CATALOG_CATEGORIES = [
   'grader',
   'drill',
   'underground',
+  'undergroundTruck',
+  'undergroundLoader',
+  'jumbo',
   'crusher',
   'support',
   'general',
@@ -21,6 +24,22 @@ export type EquipmentCatalogCategory = (typeof EQUIPMENT_CATALOG_CATEGORIES)[num
 export const EQUIPMENT_POWER_TYPES = ['diesel', 'electric', 'hybrid'] as const;
 export type EquipmentPowerType = (typeof EQUIPMENT_POWER_TYPES)[number];
 
+/** Canonical OEM display names used in seed + manufacturer filter. */
+export const EQUIPMENT_OEM_MANUFACTURERS = [
+  'Caterpillar',
+  'Komatsu',
+  'Liebherr',
+  'Hitachi',
+  'Volvo CE',
+  'Sandvik',
+  'Epiroc',
+  'Bell',
+  'XCMG',
+  'SANY',
+] as const;
+
+export type EquipmentOemManufacturer = (typeof EQUIPMENT_OEM_MANUFACTURERS)[number];
+
 /** Writable fields accepted by create/update APIs (excludes id/timestamps). */
 export interface EquipmentCatalogWriteInput {
   code?: string;
@@ -28,17 +47,24 @@ export interface EquipmentCatalogWriteInput {
   model?: string;
   category?: string;
   description?: string;
+  imageUrl?: string;
   capacityLabel?: string;
-  payloadTons?: number;
-  bucketCapacityM3?: number;
-  enginePowerKw?: number;
-  operatingWeightTons?: number;
-  purchasePriceUsd?: number;
-  fuelConsumptionLph?: number;
-  usefulLifeYears?: number;
-  availabilityPct?: number;
-  maintenanceCostUsdYear?: number;
+  payloadTons?: number | null;
+  bucketCapacityM3?: number | null;
+  enginePowerKw?: number | null;
+  operatingWeightTons?: number | null;
+  purchasePriceUsd?: number | null;
+  fuelConsumptionLph?: number | null;
+  fuelTankCapacityL?: number | null;
+  usefulLifeYears?: number | null;
+  availabilityPct?: number | null;
+  maintenanceCostUsdYear?: number | null;
+  isPriceEstimated?: boolean;
   powerType?: string;
+  oemWebsite?: string;
+  country?: string;
+  notes?: string;
+  searchAliases?: string;
   extraSpecs?: Record<string, unknown> | null;
   isActive?: boolean;
   sortOrder?: number;
@@ -63,6 +89,15 @@ export interface EquipmentCatalogListResult<T> {
   totalPages: number;
 }
 
+export interface EquipmentCatalogFacets {
+  manufacturers: string[];
+  categories: string[];
+  /** Extensible facet bag — UI may ignore unused keys. */
+  activeStatuses: boolean[];
+}
+
+export type EquipmentCatalogViewMode = 'table' | 'card';
+
 /** API/list row shape returned to the catalog UI (dates as ISO strings over JSON). */
 export interface EquipmentCatalogItemDto {
   id: string;
@@ -71,17 +106,24 @@ export interface EquipmentCatalogItemDto {
   model: string;
   category: string;
   description: string;
+  imageUrl: string;
   capacityLabel: string;
-  payloadTons: number;
-  bucketCapacityM3: number;
-  enginePowerKw: number;
-  operatingWeightTons: number;
-  purchasePriceUsd: number;
-  fuelConsumptionLph: number;
-  usefulLifeYears: number;
-  availabilityPct: number;
-  maintenanceCostUsdYear: number;
+  payloadTons: number | null;
+  bucketCapacityM3: number | null;
+  enginePowerKw: number | null;
+  operatingWeightTons: number | null;
+  purchasePriceUsd: number | null;
+  fuelConsumptionLph: number | null;
+  fuelTankCapacityL: number | null;
+  usefulLifeYears: number | null;
+  availabilityPct: number | null;
+  maintenanceCostUsdYear: number | null;
+  isPriceEstimated: boolean;
   powerType: string;
+  oemWebsite: string;
+  country: string;
+  notes: string;
+  searchAliases: string;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
@@ -95,6 +137,7 @@ export interface EquipmentCatalogFormState {
   model: string;
   category: string;
   description: string;
+  imageUrl: string;
   capacityLabel: string;
   payloadTons: string;
   bucketCapacityM3: string;
@@ -102,10 +145,16 @@ export interface EquipmentCatalogFormState {
   operatingWeightTons: string;
   purchasePriceUsd: string;
   fuelConsumptionLph: string;
+  fuelTankCapacityL: string;
   usefulLifeYears: string;
   availabilityPct: string;
   maintenanceCostUsdYear: string;
+  isPriceEstimated: boolean;
   powerType: string;
+  oemWebsite: string;
+  country: string;
+  notes: string;
+  searchAliases: string;
   isActive: boolean;
   sortOrder: string;
 }
@@ -144,10 +193,10 @@ export type CatalogSnapshotSource = {
   model: string;
   category: string;
   capacityLabel: string;
-  payloadTons: number;
-  bucketCapacityM3: number;
-  purchasePriceUsd: number;
-  fuelConsumptionLph: number;
-  maintenanceCostUsdYear: number;
+  payloadTons: number | null;
+  bucketCapacityM3: number | null;
+  purchasePriceUsd: number | null;
+  fuelConsumptionLph: number | null;
+  maintenanceCostUsdYear: number | null;
   powerType: string;
 };

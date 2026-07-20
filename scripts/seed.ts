@@ -917,6 +917,7 @@ const PROJECTS: SeedProject[] = [
 
 async function seedEquipmentCatalog(): Promise<void> {
   const rows = buildEquipmentCatalogSeedRows();
+  const codes = rows.map((row) => row.code);
   for (const row of rows) {
     await prisma.equipmentCatalogItem.upsert({
       where: { code: row.code },
@@ -926,6 +927,7 @@ async function seedEquipmentCatalog(): Promise<void> {
         model: row.model,
         category: row.category,
         description: row.description,
+        imageUrl: row.imageUrl,
         capacityLabel: row.capacityLabel,
         payloadTons: row.payloadTons,
         bucketCapacityM3: row.bucketCapacityM3,
@@ -933,16 +935,29 @@ async function seedEquipmentCatalog(): Promise<void> {
         operatingWeightTons: row.operatingWeightTons,
         purchasePriceUsd: row.purchasePriceUsd,
         fuelConsumptionLph: row.fuelConsumptionLph,
+        fuelTankCapacityL: row.fuelTankCapacityL,
         usefulLifeYears: row.usefulLifeYears,
         availabilityPct: row.availabilityPct,
         maintenanceCostUsdYear: row.maintenanceCostUsdYear,
+        isPriceEstimated: row.isPriceEstimated,
         powerType: row.powerType,
+        oemWebsite: row.oemWebsite,
+        country: row.country,
+        notes: row.notes,
+        searchAliases: row.searchAliases,
         isActive: row.isActive,
         sortOrder: row.sortOrder,
       },
     });
   }
-  console.log(`\u2705 Equipment catalog seeded: ${rows.length} items`);
+  // Drop obsolete demo codes so the catalog stays aligned with the commercial seed.
+  const removed = await prisma.equipmentCatalogItem.deleteMany({
+    where: { code: { notIn: codes } },
+  });
+  console.log(
+    `\u2705 Equipment catalog seeded: ${rows.length} items` +
+      (removed.count ? ` (removed ${removed.count} obsolete)` : '')
+  );
 }
 
 async function main() {

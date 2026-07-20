@@ -162,11 +162,11 @@ All relations are one-to-many from `MiningProject` to the child tables. There ar
 
 ### 3.9 EquipmentCatalogItem (Master Data)
 
-**Purpose:** system equipment catalog — the first Master Data entity. Stores manufacturer/model, category, technical specs (payload, bucket, power, weight), economic params (list price, fuel L/h, useful life, availability, annual maintenance), `powerType`, optional `extraSpecs` JSON for forward-compatible fields, and `isActive` / timestamps.
+**Purpose:** system equipment catalog — the first Master Data entity. Stores manufacturer/model, category, description, optional `imageUrl`, technical specs (payload, bucket, power, weight, fuel L/h, fuel tank — nullable when unknown), economic params (list price with `isPriceEstimated`, useful life, availability, annual maintenance), `powerType`, metadata (`oemWebsite`, `country`, `notes`, `searchAliases`), optional `extraSpecs` JSON, and `isActive` / timestamps.
 
 **Primary key:** `id` (cuid). **Unique:** `code` (stable seed key). **Indexes:** `category`, `isActive`, `manufacturer`, `model`.
 
-**Not related to projects via FK.** The project form snapshots selected catalog rows into `Equipment` children.
+**Not related to projects via FK.** The catalog UI and project form snapshot selected catalog rows into `Equipment` children. Catalog edits never rewrite historical fleets.
 
 ---
 

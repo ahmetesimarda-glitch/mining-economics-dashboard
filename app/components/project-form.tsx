@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatEquipmentUsd, formatSpecNumber } from '@/lib/master-data';
 import { Header } from './header';
 import {
   MINE_TYPES, MINING_METHODS, CURRENCIES, POWER_TYPES, EQUIPMENT_CATEGORIES,
@@ -46,12 +47,12 @@ interface CatalogPickItem {
   model: string;
   category: string;
   capacityLabel: string;
-  purchasePriceUsd: number;
-  fuelConsumptionLph: number;
-  maintenanceCostUsdYear: number;
+  purchasePriceUsd: number | null;
+  fuelConsumptionLph: number | null;
+  maintenanceCostUsdYear: number | null;
   powerType: string;
-  payloadTons: number;
-  bucketCapacityM3: number;
+  payloadTons: number | null;
+  bucketCapacityM3: number | null;
   description: string;
 }
 
@@ -113,6 +114,7 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
     { id: 'financial', label: t('form.step.financial'), icon: CreditCard },
   ];
   const router = useRouter();
+  const catalogImportDone = useRef(false);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [expandedEquip, setExpandedEquip] = useState<number | null>(null);
@@ -243,6 +245,40 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
     setSelectedCatalogId(null);
     toast.success(`${item.manufacturer} ${item.model}`.trim());
   };
+
+  // Snapshot import from Equipment Catalog detail → Add to Project.
+  useEffect(() => {
+    if (!isEditing || !initialData?.id || catalogImportDone.current) return;
+    if (typeof window === 'undefined') return;
+    const catalogId = new URLSearchParams(window.location.search).get('addFromCatalog');
+    if (!catalogId) return;
+    catalogImportDone.current = true;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/master-data/equipment/${catalogId}`);
+        if (!res.ok) {
+          toast.error(t('equipCat.loadError'));
+          return;
+        }
+        const item = (await res.json()) as CatalogPickItem;
+        if (cancelled) return;
+        const snapshot = snapshotCatalogToProjectEquipment(item);
+        setEquipments((prev: any[]) => [...prev, snapshot]);
+        setStep(1);
+        toast.success(`${item.manufacturer} ${item.model}`.trim());
+        router.replace(`/projects/${initialData.id}/edit`);
+      } catch {
+        toast.error(t('equipCat.loadError'));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditing, initialData?.id, t, router]);
+
   const removeEquipment = (i: number) => setEquipments((prev: any[]) => prev.filter((_: any, idx: number) => idx !== i));
 
   // Personnel handlers
@@ -1062,10 +1098,10 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-xs font-mono">
-                          {item.purchasePriceUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })} USD
+                          {formatEquipmentUsd(item.purchasePriceUsd)} USD
                         </p>
                         <p className="text-[10px] text-muted-foreground">
-                          {item.fuelConsumptionLph} lt/sa
+                          {formatSpecNumber(item.fuelConsumptionLph, { digits: 1, suffix: 'lt/sa' })}
                         </p>
                       </div>
                     </div>

@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import {
+  buildEquipmentCatalogWhere,
   normalizeEquipmentCatalogInput,
-  toOptionalJsonInput,
+  toEquipmentCatalogPrismaData,
   type EquipmentCatalogListResult,
 } from '@/lib/master-data';
 
@@ -13,13 +14,6 @@ const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
 type CatalogItem = Prisma.EquipmentCatalogItemGetPayload<object>;
-
-function parseBooleanFilter(raw: string | null): boolean | 'all' {
-  if (raw === null || raw === '' || raw === 'all') return 'all';
-  if (raw === 'true' || raw === '1') return true;
-  if (raw === 'false' || raw === '0') return false;
-  return 'all';
-}
 
 function parseSort(
   sortRaw: string | null,
@@ -45,15 +39,11 @@ function parseSort(
 
 /**
  * GET /api/master-data/equipment
- * List + search + filter + pagination.
+ * List + search (OEM aliases) + manufacturer/category/active filters + pagination.
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const q = (searchParams.get('q') ?? '').trim();
-    const category = (searchParams.get('category') ?? '').trim();
-    const manufacturer = (searchParams.get('manufacturer') ?? '').trim();
-    const isActive = parseBooleanFilter(searchParams.get('isActive'));
     const page = Math.max(1, Number(searchParams.get('page') ?? 1) || 1);
     const pageSize = Math.min(
       MAX_PAGE_SIZE,
@@ -61,21 +51,12 @@ export async function GET(request: NextRequest) {
     );
     const orderBy = parseSort(searchParams.get('sort'), searchParams.get('order'));
 
-    const where: Prisma.EquipmentCatalogItemWhereInput = {};
-    if (category) where.category = category;
-    if (manufacturer) {
-      where.manufacturer = { contains: manufacturer, mode: 'insensitive' };
-    }
-    if (isActive !== 'all') where.isActive = isActive;
-    if (q) {
-      where.OR = [
-        { model: { contains: q, mode: 'insensitive' } },
-        { manufacturer: { contains: q, mode: 'insensitive' } },
-        { description: { contains: q, mode: 'insensitive' } },
-        { capacityLabel: { contains: q, mode: 'insensitive' } },
-        { code: { contains: q, mode: 'insensitive' } },
-      ];
-    }
+    const where = buildEquipmentCatalogWhere({
+      q: searchParams.get('q'),
+      category: searchParams.get('category'),
+      manufacturer: searchParams.get('manufacturer'),
+      isActive: searchParams.get('isActive'),
+    });
 
     const [total, items] = await Promise.all([
       prisma.equipmentCatalogItem.count({ where }),
@@ -104,7 +85,6 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/master-data/equipment
- * Create a catalog item.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -119,37 +99,27 @@ export async function POST(request: NextRequest) {
       select: { id: true },
     });
     if (existing) {
+      return NextResponse.json({ error: 'Bu kod zaten kullanılıyor' }, { status: 409 });
+    }
+
+    const duplicate = await prisma.equipmentCatalogItem.findFirst({
+      where: {
+        manufacturer: { equals: data.manufacturer, mode: 'insensitive' },
+        model: { equals: data.model, mode: 'insensitive' },
+      },
+      select: { id: true },
+    });
+    if (duplicate) {
       return NextResponse.json(
-        { error: 'Bu kod zaten kullanılıyor' },
+        { error: 'Bu üretici ve model zaten katalogda mevcut' },
         { status: 409 }
       );
     }
 
-    const created = await prisma.equipmentCatalogItem.create({
-      data: {
-        code: data.code,
-        manufacturer: data.manufacturer,
-        model: data.model,
-        category: data.category,
-        description: data.description,
-        capacityLabel: data.capacityLabel,
-        payloadTons: data.payloadTons,
-        bucketCapacityM3: data.bucketCapacityM3,
-        enginePowerKw: data.enginePowerKw,
-        operatingWeightTons: data.operatingWeightTons,
-        purchasePriceUsd: data.purchasePriceUsd,
-        fuelConsumptionLph: data.fuelConsumptionLph,
-        usefulLifeYears: data.usefulLifeYears,
-        availabilityPct: data.availabilityPct,
-        maintenanceCostUsdYear: data.maintenanceCostUsdYear,
-        powerType: data.powerType,
-        extraSpecs: toOptionalJsonInput(data.extraSpecs),
-        isActive: data.isActive,
-        sortOrder: data.sortOrder,
-      },
+    const item = await prisma.equipmentCatalogItem.create({
+      data: toEquipmentCatalogPrismaData(data),
     });
-
-    return NextResponse.json(created, { status: 201 });
+    return NextResponse.json(item, { status: 201 });
   } catch (error: unknown) {
     console.error('Equipment catalog create:', error);
     const message = error instanceof Error ? error.message : 'Oluşturulamadı';

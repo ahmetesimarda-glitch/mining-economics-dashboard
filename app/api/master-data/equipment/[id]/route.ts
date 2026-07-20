@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import {
   normalizeEquipmentCatalogInput,
-  toOptionalJsonInput,
+  toEquipmentCatalogPrismaData,
 } from '@/lib/master-data';
 
 export const dynamic = 'force-dynamic';
@@ -53,38 +53,29 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         select: { id: true },
       });
       if (conflict && conflict.id !== id) {
-        return NextResponse.json(
-          { error: 'Bu kod zaten kullanılıyor' },
-          { status: 409 }
-        );
+        return NextResponse.json({ error: 'Bu kod zaten kullanılıyor' }, { status: 409 });
       }
+    }
+
+    const duplicate = await prisma.equipmentCatalogItem.findFirst({
+      where: {
+        manufacturer: { equals: data.manufacturer, mode: 'insensitive' },
+        model: { equals: data.model, mode: 'insensitive' },
+        NOT: { id },
+      },
+      select: { id: true },
+    });
+    if (duplicate) {
+      return NextResponse.json(
+        { error: 'Bu üretici ve model zaten katalogda mevcut' },
+        { status: 409 }
+      );
     }
 
     const updated = await prisma.equipmentCatalogItem.update({
       where: { id },
-      data: {
-        code: data.code,
-        manufacturer: data.manufacturer,
-        model: data.model,
-        category: data.category,
-        description: data.description,
-        capacityLabel: data.capacityLabel,
-        payloadTons: data.payloadTons,
-        bucketCapacityM3: data.bucketCapacityM3,
-        enginePowerKw: data.enginePowerKw,
-        operatingWeightTons: data.operatingWeightTons,
-        purchasePriceUsd: data.purchasePriceUsd,
-        fuelConsumptionLph: data.fuelConsumptionLph,
-        usefulLifeYears: data.usefulLifeYears,
-        availabilityPct: data.availabilityPct,
-        maintenanceCostUsdYear: data.maintenanceCostUsdYear,
-        powerType: data.powerType,
-        extraSpecs: toOptionalJsonInput(data.extraSpecs),
-        isActive: data.isActive,
-        sortOrder: data.sortOrder,
-      },
+      data: toEquipmentCatalogPrismaData(data),
     });
-
     return NextResponse.json(updated);
   } catch (error: unknown) {
     console.error('Equipment catalog update:', error);
@@ -95,7 +86,6 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
 /**
  * DELETE /api/master-data/equipment/[id]
- * Hard delete of the catalog row. Project Equipment snapshots are unaffected.
  */
 export async function DELETE(_request: NextRequest, context: RouteContext) {
   try {
@@ -109,7 +99,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     }
 
     await prisma.equipmentCatalogItem.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error('Equipment catalog delete:', error);
     const message = error instanceof Error ? error.message : 'Silinemedi';
