@@ -9,13 +9,20 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function asFiniteNumber(value: unknown, fallback: number): number {
+/** Empty / invalid → null (unknown). Finite numbers pass through. */
+function asOptionalNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string' && value.trim() !== '') {
     const n = Number(value);
     if (Number.isFinite(n)) return n;
   }
-  return fallback;
+  return null;
+}
+
+function asFiniteNumber(value: unknown, fallback: number): number {
+  const n = asOptionalNumber(value);
+  return n === null ? fallback : n;
 }
 
 function asString(value: unknown, fallback = ''): string {
@@ -41,16 +48,38 @@ export function isValidPowerType(value: string): boolean {
   return (EQUIPMENT_POWER_TYPES as readonly string[]).includes(value);
 }
 
-export type NormalizedEquipmentCatalogWrite = Required<
-  Omit<EquipmentCatalogWriteInput, 'code' | 'extraSpecs'>
-> & {
+export type NormalizedEquipmentCatalogWrite = {
   code: string;
+  manufacturer: string;
+  model: string;
+  category: string;
+  description: string;
+  imageUrl: string;
+  capacityLabel: string;
+  payloadTons: number | null;
+  bucketCapacityM3: number | null;
+  enginePowerKw: number | null;
+  operatingWeightTons: number | null;
+  purchasePriceUsd: number | null;
+  fuelConsumptionLph: number | null;
+  fuelTankCapacityL: number | null;
+  usefulLifeYears: number | null;
+  availabilityPct: number | null;
+  maintenanceCostUsdYear: number | null;
+  isPriceEstimated: boolean;
+  powerType: string;
+  oemWebsite: string;
+  country: string;
+  notes: string;
+  searchAliases: string;
   extraSpecs: Record<string, unknown> | null;
+  isActive: boolean;
+  sortOrder: number;
 };
 
 /**
  * Normalize an untrusted API body into a Prisma-ready write payload.
- * Missing fields fall back to defaults; invalid category/powerType are replaced.
+ * Missing numeric specs become null (unknown) — never invent values.
  */
 export function normalizeEquipmentCatalogInput(
   body: unknown,
@@ -87,17 +116,25 @@ export function normalizeEquipmentCatalogInput(
       model,
       category,
       description: asString(src.description).trim(),
+      imageUrl: asString(src.imageUrl).trim(),
       capacityLabel: asString(src.capacityLabel).trim(),
-      payloadTons: asFiniteNumber(src.payloadTons, 0),
-      bucketCapacityM3: asFiniteNumber(src.bucketCapacityM3, 0),
-      enginePowerKw: asFiniteNumber(src.enginePowerKw, 0),
-      operatingWeightTons: asFiniteNumber(src.operatingWeightTons, 0),
-      purchasePriceUsd: asFiniteNumber(src.purchasePriceUsd, 0),
-      fuelConsumptionLph: asFiniteNumber(src.fuelConsumptionLph, 0),
-      usefulLifeYears: asFiniteNumber(src.usefulLifeYears, 10),
-      availabilityPct: asFiniteNumber(src.availabilityPct, 85),
-      maintenanceCostUsdYear: asFiniteNumber(src.maintenanceCostUsdYear, 0),
+      payloadTons: asOptionalNumber(src.payloadTons),
+      bucketCapacityM3: asOptionalNumber(src.bucketCapacityM3),
+      enginePowerKw: asOptionalNumber(src.enginePowerKw),
+      operatingWeightTons: asOptionalNumber(src.operatingWeightTons),
+      purchasePriceUsd: asOptionalNumber(src.purchasePriceUsd),
+      fuelConsumptionLph: asOptionalNumber(src.fuelConsumptionLph),
+      fuelTankCapacityL: asOptionalNumber(src.fuelTankCapacityL),
+      usefulLifeYears: asOptionalNumber(src.usefulLifeYears) ?? 10,
+      availabilityPct: asOptionalNumber(src.availabilityPct) ?? 85,
+      maintenanceCostUsdYear: asOptionalNumber(src.maintenanceCostUsdYear),
+      isPriceEstimated:
+        typeof src.isPriceEstimated === 'boolean' ? src.isPriceEstimated : false,
       powerType,
+      oemWebsite: asString(src.oemWebsite).trim(),
+      country: asString(src.country).trim(),
+      notes: asString(src.notes).trim(),
+      searchAliases: asString(src.searchAliases).trim(),
       extraSpecs,
       isActive: typeof src.isActive === 'boolean' ? src.isActive : true,
       sortOrder: Math.trunc(asFiniteNumber(src.sortOrder, 0)),
@@ -112,17 +149,24 @@ function emptyWriteDefaults(): NormalizedEquipmentCatalogWrite {
     model: '',
     category: 'general',
     description: '',
+    imageUrl: '',
     capacityLabel: '',
-    payloadTons: 0,
-    bucketCapacityM3: 0,
-    enginePowerKw: 0,
-    operatingWeightTons: 0,
-    purchasePriceUsd: 0,
-    fuelConsumptionLph: 0,
+    payloadTons: null,
+    bucketCapacityM3: null,
+    enginePowerKw: null,
+    operatingWeightTons: null,
+    purchasePriceUsd: null,
+    fuelConsumptionLph: null,
+    fuelTankCapacityL: null,
     usefulLifeYears: 10,
     availabilityPct: 85,
-    maintenanceCostUsdYear: 0,
+    maintenanceCostUsdYear: null,
+    isPriceEstimated: false,
     powerType: 'diesel',
+    oemWebsite: '',
+    country: '',
+    notes: '',
+    searchAliases: '',
     extraSpecs: null,
     isActive: true,
     sortOrder: 0,
@@ -135,4 +179,16 @@ export function toOptionalJsonInput(
 ): Prisma.InputJsonValue | undefined {
   if (value === null) return undefined;
   return value as Prisma.InputJsonValue;
+}
+
+/** Shared Prisma create/update scalar mapping from normalized write data. */
+export function toEquipmentCatalogPrismaData(
+  data: NormalizedEquipmentCatalogWrite
+): Omit<NormalizedEquipmentCatalogWrite, 'extraSpecs'> & {
+  extraSpecs: Prisma.InputJsonValue | undefined;
+} {
+  return {
+    ...data,
+    extraSpecs: toOptionalJsonInput(data.extraSpecs),
+  };
 }

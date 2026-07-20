@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { EquipmentCatalogItemDto } from '@/lib/master-data';
-import { formatEquipmentUsd } from '@/lib/master-data';
+import { formatEquipmentUsd, formatSpecNumber } from '@/lib/master-data';
 import { useLanguage } from '@/lib/i18n/context';
 import { cn } from '@/lib/utils';
 import { Loader2, Pencil, Trash2, Truck } from 'lucide-react';
@@ -20,6 +20,7 @@ interface EquipmentTableProps {
   items: EquipmentCatalogItemDto[];
   loading: boolean;
   categoryLabel: (value: string) => string;
+  onSelect: (item: EquipmentCatalogItemDto) => void;
   onEdit: (item: EquipmentCatalogItemDto) => void;
   onDelete: (item: EquipmentCatalogItemDto) => void;
 }
@@ -28,6 +29,7 @@ export function EquipmentTable({
   items,
   loading,
   categoryLabel,
+  onSelect,
   onEdit,
   onDelete,
 }: EquipmentTableProps) {
@@ -38,14 +40,14 @@ export function EquipmentTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{t('equipCat.colManufacturer')}</TableHead>
+            <TableHead className="pl-4">{t('equipCat.colManufacturer')}</TableHead>
             <TableHead>{t('equipCat.colModel')}</TableHead>
             <TableHead>{t('equipCat.colCategory')}</TableHead>
             <TableHead>{t('equipCat.colCapacity')}</TableHead>
             <TableHead className="text-right">{t('equipCat.colPrice')}</TableHead>
             <TableHead className="text-right">{t('equipCat.colFuel')}</TableHead>
             <TableHead>{t('equipCat.colStatus')}</TableHead>
-            <TableHead className="text-right">{t('equipCat.colActions')}</TableHead>
+            <TableHead className="text-right pr-4">{t('equipCat.colActions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -65,12 +67,16 @@ export function EquipmentTable({
             </TableRow>
           ) : (
             items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.manufacturer || '—'}</TableCell>
+              <TableRow
+                key={item.id}
+                className="cursor-pointer hover:bg-muted/40"
+                onClick={() => onSelect(item)}
+              >
+                <TableCell className="font-medium pl-4">{item.manufacturer || '—'}</TableCell>
                 <TableCell>
                   <div className="font-mono text-sm">{item.model}</div>
                   {item.description ? (
-                    <div className="text-[11px] text-muted-foreground line-clamp-1">
+                    <div className="text-[11px] text-muted-foreground line-clamp-1 max-w-[220px]">
                       {item.description}
                     </div>
                   ) : null}
@@ -84,10 +90,15 @@ export function EquipmentTable({
                   {item.capacityLabel || '—'}
                 </TableCell>
                 <TableCell className="text-right font-mono text-sm">
-                  {formatEquipmentUsd(item.purchasePriceUsd)}
+                  <span>{formatEquipmentUsd(item.purchasePriceUsd)}</span>
+                  {item.isPriceEstimated && item.purchasePriceUsd != null ? (
+                    <span className="block text-[10px] text-muted-foreground font-sans">
+                      {t('equipCat.estimated')}
+                    </span>
+                  ) : null}
                 </TableCell>
                 <TableCell className="text-right font-mono text-sm">
-                  {item.fuelConsumptionLph}
+                  {formatSpecNumber(item.fuelConsumptionLph, { digits: 1 })}
                 </TableCell>
                 <TableCell>
                   <span
@@ -101,7 +112,7 @@ export function EquipmentTable({
                     {item.isActive ? t('equipCat.active') : t('equipCat.inactive')}
                   </span>
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right pr-4" onClick={(e) => e.stopPropagation()}>
                   <div className="inline-flex gap-1">
                     <Button
                       type="button"

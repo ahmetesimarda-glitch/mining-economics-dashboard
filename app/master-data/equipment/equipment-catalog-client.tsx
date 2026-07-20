@@ -5,17 +5,24 @@ import { Header } from '@/app/components/header';
 import { useLanguage } from '@/lib/i18n/context';
 import {
   EMPTY_EQUIPMENT_CATALOG_FORM,
+  EQUIPMENT_OEM_MANUFACTURERS,
   equipmentCatalogFormToPayload,
   equipmentCatalogItemToForm,
+  equipmentFiltersToSearchParams,
+  type EquipmentCatalogFacets,
   type EquipmentCatalogFormState,
   type EquipmentCatalogItemDto,
   type EquipmentCatalogListResult,
+  type EquipmentCatalogViewMode,
 } from '@/lib/master-data';
 import { EquipmentToolbar } from '@/components/master-data/equipment/EquipmentToolbar';
 import { EquipmentFilters } from '@/components/master-data/equipment/EquipmentFilters';
 import { EquipmentTable } from '@/components/master-data/equipment/EquipmentTable';
+import { EquipmentCardGrid } from '@/components/master-data/equipment/EquipmentCardGrid';
 import { EquipmentPagination } from '@/components/master-data/equipment/EquipmentPagination';
 import { EquipmentDialog } from '@/components/master-data/equipment/EquipmentDialog';
+import { EquipmentDetailDrawer } from '@/components/master-data/equipment/EquipmentDetailDrawer';
+import { EquipmentAddToProjectDialog } from '@/components/master-data/equipment/EquipmentAddToProjectDialog';
 import { toast } from 'sonner';
 
 export function EquipmentCatalogClient() {
@@ -27,14 +34,24 @@ export function EquipmentCatalogClient() {
   const [totalPages, setTotalPages] = useState(1);
   const [q, setQ] = useState('');
   const [searchInput, setSearchInput] = useState('');
-  const [category, setCategory] = useState<string>('all');
-  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [manufacturer, setManufacturer] = useState('all');
+  const [category, setCategory] = useState('all');
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<EquipmentCatalogViewMode>('table');
+  const [manufacturers, setManufacturers] = useState<string[]>([
+    ...EQUIPMENT_OEM_MANUFACTURERS,
+  ]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<EquipmentCatalogItemDto | null>(null);
   const [form, setForm] = useState<EquipmentCatalogFormState>(EMPTY_EQUIPMENT_CATALOG_FORM);
+
+  const [detailItem, setDetailItem] = useState<EquipmentCatalogItemDto | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [addToProjectItem, setAddToProjectItem] = useState<EquipmentCatalogItemDto | null>(null);
+  const [addToProjectOpen, setAddToProjectOpen] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<EquipmentCatalogItemDto | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -48,18 +65,30 @@ export function EquipmentCatalogClient() {
     [t]
   );
 
+  const loadFacets = useCallback(async () => {
+    try {
+      const res = await fetch('/api/master-data/equipment/facets');
+      if (!res.ok) return;
+      const data = (await res.json()) as EquipmentCatalogFacets;
+      if (data.manufacturers?.length) setManufacturers(data.manufacturers);
+    } catch {
+      // Facets are non-critical; OEM defaults remain.
+    }
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(page),
-        pageSize: String(pageSize),
+      const params = equipmentFiltersToSearchParams({
+        page,
+        pageSize,
         sort: 'sortOrder',
         order: 'asc',
+        q,
+        category,
+        manufacturer,
+        isActive: activeFilter,
       });
-      if (q) params.set('q', q);
-      if (category !== 'all') params.set('category', category);
-      if (activeFilter !== 'all') params.set('isActive', activeFilter);
 
       const res = await fetch(`/api/master-data/equipment?${params.toString()}`);
       if (!res.ok) {
@@ -76,7 +105,11 @@ export function EquipmentCatalogClient() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, q, category, activeFilter, t]);
+  }, [page, pageSize, q, category, manufacturer, activeFilter, t]);
+
+  useEffect(() => {
+    void loadFacets();
+  }, [loadFacets]);
 
   useEffect(() => {
     void load();
@@ -89,9 +122,20 @@ export function EquipmentCatalogClient() {
   };
 
   const openEdit = (item: EquipmentCatalogItemDto) => {
+    setDetailOpen(false);
     setEditing(item);
     setForm(equipmentCatalogItemToForm(item));
     setDialogOpen(true);
+  };
+
+  const openDetail = (item: EquipmentCatalogItemDto) => {
+    setDetailItem(item);
+    setDetailOpen(true);
+  };
+
+  const openAddToProject = (item: EquipmentCatalogItemDto) => {
+    setAddToProjectItem(item);
+    setAddToProjectOpen(true);
   };
 
   const setFormField = <K extends keyof EquipmentCatalogFormState>(
@@ -126,6 +170,7 @@ export function EquipmentCatalogClient() {
       toast.success(editing ? t('equipCat.updated') : t('equipCat.created'));
       setDialogOpen(false);
       await load();
+      await loadFacets();
     } catch {
       toast.error(t('equipCat.saveError'));
     } finally {
@@ -147,7 +192,9 @@ export function EquipmentCatalogClient() {
       }
       toast.success(t('equipCat.deleted'));
       setDeleteTarget(null);
+      setDetailOpen(false);
       await load();
+      await loadFacets();
     } catch {
       toast.error(t('equipCat.deleteError'));
     } finally {
@@ -170,6 +217,12 @@ export function EquipmentCatalogClient() {
           searchInput={searchInput}
           onSearchInputChange={setSearchInput}
           onSearch={applySearch}
+          manufacturer={manufacturer}
+          onManufacturerChange={(v) => {
+            setPage(1);
+            setManufacturer(v);
+          }}
+          manufacturers={manufacturers}
           category={category}
           onCategoryChange={(v) => {
             setPage(1);
@@ -180,18 +233,32 @@ export function EquipmentCatalogClient() {
             setPage(1);
             setActiveFilter(v);
           }}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
           total={total}
           categoryLabel={categoryLabel}
         />
 
         <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
-          <EquipmentTable
-            items={items}
-            loading={loading}
-            categoryLabel={categoryLabel}
-            onEdit={openEdit}
-            onDelete={setDeleteTarget}
-          />
+          {viewMode === 'table' ? (
+            <EquipmentTable
+              items={items}
+              loading={loading}
+              categoryLabel={categoryLabel}
+              onSelect={openDetail}
+              onEdit={openEdit}
+              onDelete={setDeleteTarget}
+            />
+          ) : (
+            <EquipmentCardGrid
+              items={items}
+              loading={loading}
+              categoryLabel={categoryLabel}
+              onSelect={openDetail}
+              onEdit={openEdit}
+              onDelete={setDeleteTarget}
+            />
+          )}
           <EquipmentPagination
             page={page}
             totalPages={totalPages}
@@ -214,6 +281,24 @@ export function EquipmentCatalogClient() {
         onDeleteTargetChange={setDeleteTarget}
         deleting={deleting}
         onConfirmDelete={() => void handleDelete()}
+      />
+
+      <EquipmentDetailDrawer
+        item={detailItem}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        categoryLabel={categoryLabel}
+        onEdit={openEdit}
+        onAddToProject={(item) => {
+          setDetailOpen(false);
+          openAddToProject(item);
+        }}
+      />
+
+      <EquipmentAddToProjectDialog
+        open={addToProjectOpen}
+        onOpenChange={setAddToProjectOpen}
+        item={addToProjectItem}
       />
     </div>
   );

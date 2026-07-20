@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import {
   EQUIPMENT_CATALOG_CATEGORIES,
+  EQUIPMENT_OEM_MANUFACTURERS,
   EQUIPMENT_POWER_TYPES,
   type EquipmentCatalogFormState,
 } from '@/lib/master-data';
@@ -32,16 +33,20 @@ export function EquipmentForm({ form, onChange, categoryLabel }: EquipmentFormPr
 
   return (
     <div className="space-y-5 py-2">
-      <section className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {t('equipCat.sectionGeneral')}
-        </h3>
+      <Section title={t('equipCat.sectionGeneral')}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label={t('equipCat.colManufacturer')}>
             <Input
+              list="equipment-oem-list"
               value={form.manufacturer}
               onChange={(e) => onChange('manufacturer', e.target.value)}
+              placeholder={EQUIPMENT_OEM_MANUFACTURERS[0]}
             />
+            <datalist id="equipment-oem-list">
+              {EQUIPMENT_OEM_MANUFACTURERS.map((m) => (
+                <option key={m} value={m} />
+              ))}
+            </datalist>
           </Field>
           <Field label={t('equipCat.colModel')} required>
             <Input value={form.model} onChange={(e) => onChange('model', e.target.value)} />
@@ -69,6 +74,15 @@ export function EquipmentForm({ form, onChange, categoryLabel }: EquipmentFormPr
             />
           </Field>
           <div className="sm:col-span-2">
+            <Field label={t('equipCat.imageUrl')}>
+              <Input
+                value={form.imageUrl}
+                onChange={(e) => onChange('imageUrl', e.target.value)}
+                placeholder="https://"
+              />
+            </Field>
+          </div>
+          <div className="sm:col-span-2">
             <Field label={t('equipCat.description')}>
               <Textarea
                 value={form.description}
@@ -78,12 +92,9 @@ export function EquipmentForm({ form, onChange, categoryLabel }: EquipmentFormPr
             </Field>
           </div>
         </div>
-      </section>
+      </Section>
 
-      <section className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {t('equipCat.sectionTechnical')}
-        </h3>
+      <Section title={t('equipCat.sectionTechnical')}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label={t('equipCat.capacityLabel')}>
             <Input
@@ -91,38 +102,36 @@ export function EquipmentForm({ form, onChange, categoryLabel }: EquipmentFormPr
               onChange={(e) => onChange('capacityLabel', e.target.value)}
             />
           </Field>
-          <Field label={t('equipCat.payloadTons')}>
-            <Input
-              type="number"
-              step="any"
-              value={form.payloadTons}
-              onChange={(e) => onChange('payloadTons', e.target.value)}
-            />
-          </Field>
-          <Field label={t('equipCat.bucketCapacityM3')}>
-            <Input
-              type="number"
-              step="any"
-              value={form.bucketCapacityM3}
-              onChange={(e) => onChange('bucketCapacityM3', e.target.value)}
-            />
-          </Field>
-          <Field label={t('equipCat.enginePowerKw')}>
-            <Input
-              type="number"
-              step="any"
-              value={form.enginePowerKw}
-              onChange={(e) => onChange('enginePowerKw', e.target.value)}
-            />
-          </Field>
-          <Field label={t('equipCat.operatingWeightTons')}>
-            <Input
-              type="number"
-              step="any"
-              value={form.operatingWeightTons}
-              onChange={(e) => onChange('operatingWeightTons', e.target.value)}
-            />
-          </Field>
+          <NumField
+            label={t('equipCat.payloadTons')}
+            value={form.payloadTons}
+            onChange={(v) => onChange('payloadTons', v)}
+          />
+          <NumField
+            label={t('equipCat.bucketCapacityM3')}
+            value={form.bucketCapacityM3}
+            onChange={(v) => onChange('bucketCapacityM3', v)}
+          />
+          <NumField
+            label={t('equipCat.enginePowerKw')}
+            value={form.enginePowerKw}
+            onChange={(v) => onChange('enginePowerKw', v)}
+          />
+          <NumField
+            label={t('equipCat.operatingWeightTons')}
+            value={form.operatingWeightTons}
+            onChange={(v) => onChange('operatingWeightTons', v)}
+          />
+          <NumField
+            label={t('equipCat.fuelConsumptionLph')}
+            value={form.fuelConsumptionLph}
+            onChange={(v) => onChange('fuelConsumptionLph', v)}
+          />
+          <NumField
+            label={t('equipCat.fuelTankCapacityL')}
+            value={form.fuelTankCapacityL}
+            onChange={(v) => onChange('fuelTankCapacityL', v)}
+          />
           <Field label={t('equipCat.powerType')}>
             <Select value={form.powerType} onValueChange={(v) => onChange('powerType', v)}>
               <SelectTrigger>
@@ -138,52 +147,43 @@ export function EquipmentForm({ form, onChange, categoryLabel }: EquipmentFormPr
             </Select>
           </Field>
         </div>
-      </section>
+      </Section>
 
-      <section className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {t('equipCat.sectionEconomic')}
-        </h3>
+      <Section title={t('equipCat.sectionEconomic')}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label={t('equipCat.purchasePriceUsd')}>
-            <Input
-              type="number"
-              step="any"
-              value={form.purchasePriceUsd}
-              onChange={(e) => onChange('purchasePriceUsd', e.target.value)}
-            />
-          </Field>
-          <Field label={t('equipCat.fuelConsumptionLph')}>
-            <Input
-              type="number"
-              step="any"
-              value={form.fuelConsumptionLph}
-              onChange={(e) => onChange('fuelConsumptionLph', e.target.value)}
-            />
-          </Field>
-          <Field label={t('equipCat.usefulLifeYears')}>
-            <Input
-              type="number"
-              step="any"
-              value={form.usefulLifeYears}
-              onChange={(e) => onChange('usefulLifeYears', e.target.value)}
-            />
-          </Field>
-          <Field label={t('equipCat.availabilityPct')}>
-            <Input
-              type="number"
-              step="any"
-              value={form.availabilityPct}
-              onChange={(e) => onChange('availabilityPct', e.target.value)}
-            />
-          </Field>
-          <Field label={t('equipCat.maintenanceCostUsdYear')}>
-            <Input
-              type="number"
-              step="any"
-              value={form.maintenanceCostUsdYear}
-              onChange={(e) => onChange('maintenanceCostUsdYear', e.target.value)}
-            />
+          <NumField
+            label={t('equipCat.purchasePriceUsd')}
+            value={form.purchasePriceUsd}
+            onChange={(v) => onChange('purchasePriceUsd', v)}
+          />
+          <NumField
+            label={t('equipCat.maintenanceCostUsdYear')}
+            value={form.maintenanceCostUsdYear}
+            onChange={(v) => onChange('maintenanceCostUsdYear', v)}
+          />
+          <NumField
+            label={t('equipCat.usefulLifeYears')}
+            value={form.usefulLifeYears}
+            onChange={(v) => onChange('usefulLifeYears', v)}
+          />
+          <NumField
+            label={t('equipCat.availabilityPct')}
+            value={form.availabilityPct}
+            onChange={(v) => onChange('availabilityPct', v)}
+          />
+          <Field label={t('equipCat.isPriceEstimated')}>
+            <Select
+              value={form.isPriceEstimated ? 'true' : 'false'}
+              onValueChange={(v) => onChange('isPriceEstimated', v === 'true')}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">{t('equipCat.estimated')}</SelectItem>
+                <SelectItem value="false">{t('equipCat.confirmed')}</SelectItem>
+              </SelectContent>
+            </Select>
           </Field>
           <Field label={t('equipCat.status')}>
             <Select
@@ -200,8 +200,52 @@ export function EquipmentForm({ form, onChange, categoryLabel }: EquipmentFormPr
             </Select>
           </Field>
         </div>
-      </section>
+      </Section>
+
+      <Section title={t('equipCat.sectionMetadata')}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label={t('equipCat.oemWebsite')}>
+            <Input
+              value={form.oemWebsite}
+              onChange={(e) => onChange('oemWebsite', e.target.value)}
+              placeholder="https://"
+            />
+          </Field>
+          <Field label={t('equipCat.country')}>
+            <Input value={form.country} onChange={(e) => onChange('country', e.target.value)} />
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label={t('equipCat.searchAliases')}>
+              <Input
+                value={form.searchAliases}
+                onChange={(e) => onChange('searchAliases', e.target.value)}
+                placeholder={t('equipCat.searchAliasesHint')}
+              />
+            </Field>
+          </div>
+          <div className="sm:col-span-2">
+            <Field label={t('equipCat.notes')}>
+              <Textarea
+                value={form.notes}
+                onChange={(e) => onChange('notes', e.target.value)}
+                rows={2}
+              />
+            </Field>
+          </div>
+        </div>
+      </Section>
     </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </h3>
+      {children}
+    </section>
   );
 }
 
@@ -222,5 +266,21 @@ function Field({
       </Label>
       {children}
     </div>
+  );
+}
+
+function NumField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Field label={label}>
+      <Input type="number" step="any" value={value} onChange={(e) => onChange(e.target.value)} />
+    </Field>
   );
 }
