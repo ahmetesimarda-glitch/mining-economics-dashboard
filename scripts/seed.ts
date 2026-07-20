@@ -3,7 +3,7 @@ import {
   performFullAnalysis,
   type ProjectParams,
 } from '../lib/calculations';
-import { buildEquipmentCatalogSeedRows } from '../lib/master-data';
+import { seedEquipmentCatalogIdempotent } from '../lib/master-data';
 
 const prisma = new PrismaClient();
 
@@ -916,47 +916,200 @@ const PROJECTS: SeedProject[] = [
 
 
 async function seedEquipmentCatalog(): Promise<void> {
-  const rows = buildEquipmentCatalogSeedRows();
-  const codes = rows.map((row) => row.code);
-  for (const row of rows) {
-    await prisma.equipmentCatalogItem.upsert({
-      where: { code: row.code },
-      create: row,
-      update: {
-        manufacturer: row.manufacturer,
-        model: row.model,
-        category: row.category,
-        description: row.description,
-        imageUrl: row.imageUrl,
-        capacityLabel: row.capacityLabel,
-        payloadTons: row.payloadTons,
-        bucketCapacityM3: row.bucketCapacityM3,
-        enginePowerKw: row.enginePowerKw,
-        operatingWeightTons: row.operatingWeightTons,
-        purchasePriceUsd: row.purchasePriceUsd,
-        fuelConsumptionLph: row.fuelConsumptionLph,
-        fuelTankCapacityL: row.fuelTankCapacityL,
-        usefulLifeYears: row.usefulLifeYears,
-        availabilityPct: row.availabilityPct,
-        maintenanceCostUsdYear: row.maintenanceCostUsdYear,
-        isPriceEstimated: row.isPriceEstimated,
-        powerType: row.powerType,
-        oemWebsite: row.oemWebsite,
-        country: row.country,
-        notes: row.notes,
-        searchAliases: row.searchAliases,
-        isActive: row.isActive,
-        sortOrder: row.sortOrder,
-      },
-    });
-  }
-  // Drop obsolete demo codes so the catalog stays aligned with the commercial seed.
-  const removed = await prisma.equipmentCatalogItem.deleteMany({
-    where: { code: { notIn: codes } },
+  const { upserted } = await seedEquipmentCatalogIdempotent(prisma);
+  console.log(`\u2705 Equipment catalog seeded (idempotent upsert): ${upserted} items`);
+}
+
+/**
+ * Idempotent demo-project seed: create if missing, update scalars if present.
+ * Never deletes projects or child rows — preserves user edits and unrelated data.
+ */
+async function seedDemoProject(proj: SeedProject): Promise<void> {
+  const analysis = performFullAnalysis(proj.params);
+
+  const cashFlowData = (analysis?.cashFlows ?? []).map((cf: any) => ({
+    year: cf?.year ?? 0,
+    revenue: cf?.revenue ?? 0,
+    opex: cf?.opex ?? 0,
+    depreciation: cf?.depreciation ?? 0,
+    taxPayment: cf?.taxPayment ?? 0,
+    royalty: cf?.royalty ?? 0,
+    creditPayment: cf?.creditPayment ?? 0,
+    creditInterest: cf?.creditInterest ?? 0,
+    netCashFlow: cf?.netCashFlow ?? 0,
+    cumulativeCashFlow: cf?.cumulativeCashFlow ?? 0,
+    discountedCashFlow: cf?.discountedCashFlow ?? 0,
+  }));
+  const projNpv = analysis?.npv ?? 0;
+  const projIrr = analysis?.irr ?? 0;
+  const projPayback = analysis?.paybackPeriod ?? 0;
+  const projBreakeven = analysis?.breakevenPrice ?? 0;
+  const projTotalRevenue = analysis?.totalRevenue ?? 0;
+  const projTotalCost = analysis?.totalCost ?? 0;
+
+  const scalarData = {
+    name: proj.name,
+    mineType: proj.mineType,
+    miningMethod: proj.miningMethod,
+    location: proj.location,
+    currency: proj.currency,
+    exchangeRate: proj.exchangeRate,
+    fuelPricePerLiter: proj.fuelPricePerLiter,
+    electricityUnitPrice: proj.electricityUnitPrice,
+    explosiveUnitPrice: proj.explosiveUnitPrice,
+    totalReserves: proj.totalReserves,
+    maxAnnualCapacity: proj.maxAnnualCapacity,
+    oreGrade: proj.oreGrade,
+    oreGradeUnit: proj.oreGradeUnit,
+    waterConsumptionDaily: proj.waterConsumptionDaily,
+    rehabilitationAreaHa: proj.rehabilitationAreaHa,
+    rehabilitationCostPerHa: proj.rehabilitationCostPerHa,
+    loanAmount: proj.loanAmount,
+    loanInterestRate: proj.loanInterestRate,
+    loanTermYears: proj.loanTermYears,
+    equityRatio: proj.equityRatio,
+    depreciationMethod: proj.depreciationMethod,
+    equipmentRenewalEnabled: proj.equipmentRenewalEnabled ?? true,
+    equipmentRenewalCycleYears: proj.equipmentRenewalCycleYears ?? 10,
+    latitude: proj.latitude,
+    longitude: proj.longitude,
+    projectLifeYears: proj.params.projectLifeYears,
+    discountRate: proj.params.discountRate,
+    taxRate: proj.params.taxRate,
+    royaltyRate: proj.params.royaltyRate,
+    creditRate: proj.params.creditRate,
+    creditYears: proj.params.creditYears,
+    unitPrice: proj.params.unitPrice,
+    annualProduction: proj.params.annualProduction,
+    productionUnit: 'Mt',
+    plantProcessingRate: proj.params.plantProcessingRate,
+    equipmentCost: proj.params.equipmentCost,
+    facilityCost: proj.params.facilityCost,
+    infrastructureCost: proj.params.infrastructureCost,
+    contingencyRate: proj.params.contingencyRate,
+    totalCapex: proj.params.totalCapex,
+    fuelCost: proj.params.fuelCost,
+    personnelCost: proj.params.personnelCost,
+    maintenanceCost: proj.params.maintenanceCost,
+    explosivesCost: proj.params.explosivesCost,
+    tireCost: proj.params.tireCost,
+    strippingCost: proj.params.strippingCost,
+    otherOpex: proj.params.otherOpex,
+    totalOpex: proj.params.totalOpex,
+    forestCost: proj.params.forestCost,
+    landCost: proj.params.landCost,
+    rehabilitationCost: proj.params.rehabilitationCost,
+    annualStrippingVolume: proj.params.annualStrippingVolume,
+    strippingUnitCost: proj.params.strippingUnitCost,
+    contractorStrippingCost: proj.params.contractorStrippingCost,
+    plantOperatingCost: proj.params.plantOperatingCost,
+    equipmentDepLife: proj.params.equipmentDepLife,
+    facilityDepLife: proj.params.facilityDepLife,
+    npv: projNpv,
+    irr: projIrr,
+    paybackPeriod: projPayback,
+    breakevenPrice: projBreakeven,
+    totalRevenue: projTotalRevenue,
+    totalCost: projTotalCost,
+    byProductRevenue: proj.params.byProductRevenue ?? 0,
+    customCashFlows: false,
+  };
+
+  const existing = await prisma.miningProject.findUnique({
+    where: { id: proj.id },
+    select: { id: true },
   });
+
+  if (existing) {
+    // Update scalars only — do not wipe child collections or user edits.
+    await prisma.miningProject.update({
+      where: { id: proj.id },
+      data: scalarData,
+    });
+    console.log(
+      `\u2705 ${proj.name} g\u00fcncellendi (NPV: ${projNpv.toFixed(2)} MUSD, IRR: ${projIrr.toFixed(2)}%)`
+    );
+    return;
+  }
+
+  await prisma.miningProject.create({
+    data: {
+      id: proj.id,
+      ...scalarData,
+      cashFlows: {
+        create: cashFlowData.map((cf: any) => ({
+          year: cf.year,
+          revenue: cf.revenue,
+          opex: cf.opex,
+          depreciation: cf.depreciation,
+          taxPayment: cf.taxPayment,
+          royalty: cf.royalty,
+          creditPayment: cf.creditPayment,
+          creditInterest: cf.creditInterest,
+          netCashFlow: cf.netCashFlow,
+          cumulativeCashFlow: cf.cumulativeCashFlow,
+          discountedCashFlow: cf.discountedCashFlow,
+        })),
+      },
+      equipments: {
+        create: proj.equipments.map((eq: any) => ({
+          machineType: eq.machineType,
+          equipmentCategory: eq.equipmentCategory,
+          model: eq.model ?? '',
+          tonnageCapacity: eq.tonnageCapacity ?? '',
+          quantity: eq.quantity ?? 1,
+          spareQuantity: eq.spareQuantity ?? 0,
+          unitCost: eq.unitCost ?? 0,
+          totalCost: eq.totalCost ?? 0,
+          fuelConsumption: eq.fuelConsumption ?? 0,
+          maintenanceCost: eq.maintenanceCost ?? 0,
+          dailyWorkHours: eq.dailyWorkHours ?? 8,
+          maintenancePeriodHours: eq.maintenancePeriodHours ?? 500,
+          operatorCount: eq.operatorCount ?? 1,
+          powerType: eq.powerType ?? 'diesel',
+          hourlyFuelConsumption: eq.hourlyFuelConsumption ?? 0,
+          productionImpact: eq.productionImpact ?? 0,
+          drillCapacity: eq.drillCapacity ?? 0,
+          holeDiameter: eq.holeDiameter ?? 0,
+          maxDrillDepth: eq.maxDrillDepth ?? 0,
+          bucketVolume: eq.bucketVolume ?? 0,
+          transportCapacity: eq.transportCapacity ?? 0,
+          loadingCapacity: eq.loadingCapacity ?? 0,
+          crushingCapacity: eq.crushingCapacity ?? 0,
+          gallerySuitability: eq.gallerySuitability ?? '',
+        })),
+      },
+      personnels: {
+        create: proj.personnels.map((p: any) => ({
+          role: p.role,
+          count: p.count ?? 1,
+          monthlySalary: p.monthlySalary ?? 0,
+          annualCost: (p.count ?? 1) * (p.monthlySalary ?? 0) * 12,
+        })),
+      },
+      byProducts: {
+        create: proj.byProducts.map((bp: any) => ({
+          name: bp.name,
+          annualProduction: bp.annualProduction ?? 0,
+          productionUnit: bp.productionUnit ?? 'ton',
+          unitPrice: bp.unitPrice ?? 0,
+          priceUnit: bp.priceUnit ?? 'USD/ton',
+          totalRevenue: bp.totalRevenue ?? 0,
+        })),
+      },
+      methodCosts: {
+        create: proj.methodCosts.map((mc: any) => ({
+          name: mc.name,
+          category: mc.category ?? 'other',
+          value: mc.value ?? 0,
+          unit: mc.unit ?? 'MUSD',
+        })),
+      },
+    },
+  });
+
   console.log(
-    `\u2705 Equipment catalog seeded: ${rows.length} items` +
-      (removed.count ? ` (removed ${removed.count} obsolete)` : '')
+    `\u2705 ${proj.name} eklendi (NPV: ${projNpv.toFixed(2)} MUSD, IRR: ${projIrr.toFixed(2)}%)`
   );
 }
 
@@ -964,185 +1117,10 @@ async function main() {
   await seedEquipmentCatalog();
 
   for (const proj of PROJECTS) {
-    const analysis = performFullAnalysis(proj.params);
-
-    const cashFlowData = (analysis?.cashFlows ?? []).map((cf: any) => ({
-      year: cf?.year ?? 0,
-      revenue: cf?.revenue ?? 0,
-      opex: cf?.opex ?? 0,
-      depreciation: cf?.depreciation ?? 0,
-      taxPayment: cf?.taxPayment ?? 0,
-      royalty: cf?.royalty ?? 0,
-      creditPayment: cf?.creditPayment ?? 0,
-      creditInterest: cf?.creditInterest ?? 0,
-      netCashFlow: cf?.netCashFlow ?? 0,
-      cumulativeCashFlow: cf?.cumulativeCashFlow ?? 0,
-      discountedCashFlow: cf?.discountedCashFlow ?? 0,
-    }));
-    const projNpv = analysis?.npv ?? 0;
-    const projIrr = analysis?.irr ?? 0;
-    const projPayback = analysis?.paybackPeriod ?? 0;
-    const projBreakeven = analysis?.breakevenPrice ?? 0;
-    const projTotalRevenue = analysis?.totalRevenue ?? 0;
-    const projTotalCost = analysis?.totalCost ?? 0;
-
-    // Delete old related data if updating
-    try {
-      const existing = await prisma.miningProject.findUnique({ where: { id: proj.id } });
-      if (existing) {
-        await prisma.cashFlowYear.deleteMany({ where: { projectId: proj.id } });
-        await prisma.equipment.deleteMany({ where: { projectId: proj.id } });
-        await prisma.personnel.deleteMany({ where: { projectId: proj.id } });
-        await prisma.byProduct.deleteMany({ where: { projectId: proj.id } });
-        await prisma.methodSpecificCost.deleteMany({ where: { projectId: proj.id } });
-        await prisma.miningProject.delete({ where: { id: proj.id } });
-      }
-    } catch {}
-
-    await prisma.miningProject.create({
-      data: {
-        id: proj.id,
-        name: proj.name,
-        mineType: proj.mineType,
-        miningMethod: proj.miningMethod,
-        location: proj.location,
-        currency: proj.currency,
-        exchangeRate: proj.exchangeRate,
-        fuelPricePerLiter: proj.fuelPricePerLiter,
-        electricityUnitPrice: proj.electricityUnitPrice,
-        explosiveUnitPrice: proj.explosiveUnitPrice,
-        totalReserves: proj.totalReserves,
-        maxAnnualCapacity: proj.maxAnnualCapacity,
-        oreGrade: proj.oreGrade,
-        oreGradeUnit: proj.oreGradeUnit,
-        waterConsumptionDaily: proj.waterConsumptionDaily,
-        rehabilitationAreaHa: proj.rehabilitationAreaHa,
-        rehabilitationCostPerHa: proj.rehabilitationCostPerHa,
-        loanAmount: proj.loanAmount,
-        loanInterestRate: proj.loanInterestRate,
-        loanTermYears: proj.loanTermYears,
-        equityRatio: proj.equityRatio,
-        depreciationMethod: proj.depreciationMethod,
-        equipmentRenewalEnabled: proj.equipmentRenewalEnabled ?? true,
-        equipmentRenewalCycleYears: proj.equipmentRenewalCycleYears ?? 10,
-        latitude: proj.latitude,
-        longitude: proj.longitude,
-        projectLifeYears: proj.params.projectLifeYears,
-        discountRate: proj.params.discountRate,
-        taxRate: proj.params.taxRate,
-        royaltyRate: proj.params.royaltyRate,
-        creditRate: proj.params.creditRate,
-        creditYears: proj.params.creditYears,
-        unitPrice: proj.params.unitPrice,
-        annualProduction: proj.params.annualProduction,
-        productionUnit: 'Mt',
-        plantProcessingRate: proj.params.plantProcessingRate,
-        equipmentCost: proj.params.equipmentCost,
-        facilityCost: proj.params.facilityCost,
-        infrastructureCost: proj.params.infrastructureCost,
-        contingencyRate: proj.params.contingencyRate,
-        totalCapex: proj.params.totalCapex,
-        fuelCost: proj.params.fuelCost,
-        personnelCost: proj.params.personnelCost,
-        maintenanceCost: proj.params.maintenanceCost,
-        explosivesCost: proj.params.explosivesCost,
-        tireCost: proj.params.tireCost,
-        strippingCost: proj.params.strippingCost,
-        otherOpex: proj.params.otherOpex,
-        totalOpex: proj.params.totalOpex,
-        forestCost: proj.params.forestCost,
-        landCost: proj.params.landCost,
-        rehabilitationCost: proj.params.rehabilitationCost,
-        annualStrippingVolume: proj.params.annualStrippingVolume,
-        strippingUnitCost: proj.params.strippingUnitCost,
-        contractorStrippingCost: proj.params.contractorStrippingCost,
-        plantOperatingCost: proj.params.plantOperatingCost,
-        equipmentDepLife: proj.params.equipmentDepLife,
-        facilityDepLife: proj.params.facilityDepLife,
-        npv: projNpv,
-        irr: projIrr,
-        paybackPeriod: projPayback,
-        breakevenPrice: projBreakeven,
-        totalRevenue: projTotalRevenue,
-        totalCost: projTotalCost,
-        byProductRevenue: proj.params.byProductRevenue ?? 0,
-        customCashFlows: false,
-        cashFlows: {
-          create: cashFlowData.map((cf: any) => ({
-            year: cf.year,
-            revenue: cf.revenue,
-            opex: cf.opex,
-            depreciation: cf.depreciation,
-            taxPayment: cf.taxPayment,
-            royalty: cf.royalty,
-            creditPayment: cf.creditPayment,
-            creditInterest: cf.creditInterest,
-            netCashFlow: cf.netCashFlow,
-            cumulativeCashFlow: cf.cumulativeCashFlow,
-            discountedCashFlow: cf.discountedCashFlow,
-          })),
-        },
-        equipments: {
-          create: proj.equipments.map((eq: any) => ({
-            machineType: eq.machineType,
-            equipmentCategory: eq.equipmentCategory,
-            model: eq.model ?? '',
-            tonnageCapacity: eq.tonnageCapacity ?? '',
-            quantity: eq.quantity ?? 1,
-            spareQuantity: eq.spareQuantity ?? 0,
-            unitCost: eq.unitCost ?? 0,
-            totalCost: eq.totalCost ?? 0,
-            fuelConsumption: eq.fuelConsumption ?? 0,
-            maintenanceCost: eq.maintenanceCost ?? 0,
-            dailyWorkHours: eq.dailyWorkHours ?? 8,
-            maintenancePeriodHours: eq.maintenancePeriodHours ?? 500,
-            operatorCount: eq.operatorCount ?? 1,
-            powerType: eq.powerType ?? 'diesel',
-            hourlyFuelConsumption: eq.hourlyFuelConsumption ?? 0,
-            productionImpact: eq.productionImpact ?? 0,
-            drillCapacity: eq.drillCapacity ?? 0,
-            holeDiameter: eq.holeDiameter ?? 0,
-            maxDrillDepth: eq.maxDrillDepth ?? 0,
-            bucketVolume: eq.bucketVolume ?? 0,
-            transportCapacity: eq.transportCapacity ?? 0,
-            loadingCapacity: eq.loadingCapacity ?? 0,
-            crushingCapacity: eq.crushingCapacity ?? 0,
-            gallerySuitability: eq.gallerySuitability ?? '',
-          })),
-        },
-        personnels: {
-          create: proj.personnels.map((p: any) => ({
-            role: p.role,
-            count: p.count ?? 1,
-            monthlySalary: p.monthlySalary ?? 0,
-            annualCost: (p.count ?? 1) * (p.monthlySalary ?? 0) * 12,
-          })),
-        },
-        byProducts: {
-          create: proj.byProducts.map((bp: any) => ({
-            name: bp.name,
-            annualProduction: bp.annualProduction ?? 0,
-            productionUnit: bp.productionUnit ?? 'ton',
-            unitPrice: bp.unitPrice ?? 0,
-            priceUnit: bp.priceUnit ?? 'USD/ton',
-            totalRevenue: bp.totalRevenue ?? 0,
-          })),
-        },
-        methodCosts: {
-          create: proj.methodCosts.map((mc: any) => ({
-            name: mc.name,
-            category: mc.category ?? 'other',
-            value: mc.value ?? 0,
-            unit: mc.unit ?? 'MUSD',
-          })),
-        },
-      },
-    });
-
-    console.log(`\u2705 ${proj.name} eklendi (NPV: ${projNpv.toFixed(2)} MUSD, IRR: ${projIrr.toFixed(2)}%)`);
+    await seedDemoProject(proj);
   }
 
-  console.log(`\n\u2705 Seed tamamland\u0131: ${PROJECTS.length} proje eklendi`);
+  console.log(`\n\u2705 Seed tamamland\u0131: ${PROJECTS.length} proje (idempotent)`);
 }
 
 main()
