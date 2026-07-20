@@ -88,7 +88,7 @@ export async function POST(
       },
     });
 
-    const otherProjects = allProjects.filter((p) => p.id !== project.id);
+    const otherProjects = allProjects.filter((p: any) => p.id !== project.id);
 
     // Compute sensitivity elasticities
     const projectParams = buildProjectParams(project);
