@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import {
   normalizeEquipmentCatalogInput,
+  toOptionalJsonInput,
   type EquipmentCatalogListResult,
 } from '@/lib/master-data';
 
@@ -12,13 +13,6 @@ const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
 type CatalogItem = Prisma.EquipmentCatalogItemGetPayload<object>;
-
-function toOptionalJson(
-  value: Record<string, unknown> | null
-): Prisma.InputJsonValue | undefined {
-  if (value === null) return undefined;
-  return value as Prisma.InputJsonValue;
-}
 
 function parseBooleanFilter(raw: string | null): boolean | 'all' {
   if (raw === null || raw === '' || raw === 'all') return 'all';
@@ -149,7 +143,7 @@ export async function POST(request: NextRequest) {
         availabilityPct: data.availabilityPct,
         maintenanceCostUsdYear: data.maintenanceCostUsdYear,
         powerType: data.powerType,
-        extraSpecs: toOptionalJson(data.extraSpecs),
+        extraSpecs: toOptionalJsonInput(data.extraSpecs),
         isActive: data.isActive,
         sortOrder: data.sortOrder,
       },

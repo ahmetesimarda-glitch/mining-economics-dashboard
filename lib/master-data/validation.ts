@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import type { EquipmentCatalogWriteInput } from './types';
 import {
   EQUIPMENT_CATALOG_CATEGORIES,
@@ -126,4 +127,12 @@ function emptyWriteDefaults(): NormalizedEquipmentCatalogWrite {
     isActive: true,
     sortOrder: 0,
   };
+}
+
+/** Prisma JSON write helper shared by catalog create/update routes. */
+export function toOptionalJsonInput(
+  value: Record<string, unknown> | null
+): Prisma.InputJsonValue | undefined {
+  if (value === null) return undefined;
+  return value as Prisma.InputJsonValue;
 }

@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { normalizeEquipmentCatalogInput } from '@/lib/master-data';
+import {
+  normalizeEquipmentCatalogInput,
+  toOptionalJsonInput,
+} from '@/lib/master-data';
 
 export const dynamic = 'force-dynamic';
 
 type RouteContext = { params: { id: string } };
-
-function toOptionalJson(
-  value: Record<string, unknown> | null
-): Prisma.InputJsonValue | undefined {
-  if (value === null) return undefined;
-  return value as Prisma.InputJsonValue;
-}
 
 /**
  * GET /api/master-data/equipment/[id]
@@ -84,7 +79,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         availabilityPct: data.availabilityPct,
         maintenanceCostUsdYear: data.maintenanceCostUsdYear,
         powerType: data.powerType,
-        extraSpecs: toOptionalJson(data.extraSpecs),
+        extraSpecs: toOptionalJsonInput(data.extraSpecs),
         isActive: data.isActive,
         sortOrder: data.sortOrder,
       },

@@ -26,6 +26,7 @@ export {
   slugifyEquipmentCode,
   isValidEquipmentCategory,
   isValidPowerType,
+  toOptionalJsonInput,
 } from './validation';
 export type { NormalizedEquipmentCatalogWrite } from './validation';
 
