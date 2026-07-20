@@ -63,6 +63,53 @@ export interface EquipmentCatalogListResult<T> {
   totalPages: number;
 }
 
+/** API/list row shape returned to the catalog UI (dates as ISO strings over JSON). */
+export interface EquipmentCatalogItemDto {
+  id: string;
+  code: string;
+  manufacturer: string;
+  model: string;
+  category: string;
+  description: string;
+  capacityLabel: string;
+  payloadTons: number;
+  bucketCapacityM3: number;
+  enginePowerKw: number;
+  operatingWeightTons: number;
+  purchasePriceUsd: number;
+  fuelConsumptionLph: number;
+  usefulLifeYears: number;
+  availabilityPct: number;
+  maintenanceCostUsdYear: number;
+  powerType: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Controlled form draft for create/edit dialogs (numeric fields as strings while editing). */
+export interface EquipmentCatalogFormState {
+  code: string;
+  manufacturer: string;
+  model: string;
+  category: string;
+  description: string;
+  capacityLabel: string;
+  payloadTons: string;
+  bucketCapacityM3: string;
+  enginePowerKw: string;
+  operatingWeightTons: string;
+  purchasePriceUsd: string;
+  fuelConsumptionLph: string;
+  usefulLifeYears: string;
+  availabilityPct: string;
+  maintenanceCostUsdYear: string;
+  powerType: string;
+  isActive: boolean;
+  sortOrder: string;
+}
+
 /** Snapshot shape copied into a project Equipment row (no catalog FK). */
 export interface ProjectEquipmentSnapshot {
   machineType: string;
@@ -91,3 +138,16 @@ export interface ProjectEquipmentSnapshot {
   crushingCapacity: number;
   gallerySuitability: string;
 }
+
+export type CatalogSnapshotSource = {
+  manufacturer: string;
+  model: string;
+  category: string;
+  capacityLabel: string;
+  payloadTons: number;
+  bucketCapacityM3: number;
+  purchasePriceUsd: number;
+  fuelConsumptionLph: number;
+  maintenanceCostUsdYear: number;
+  powerType: string;
+};

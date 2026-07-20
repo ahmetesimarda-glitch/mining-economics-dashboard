@@ -80,6 +80,7 @@ nextjs_space/
 │               └── pdf/route.ts
 ├── components/
 │   ├── ui/                       # Radix-based reusable primitives (button, card, dialog, tabs, ...)
+│   ├── master-data/equipment/    # Equipment Catalog UI pieces (table, filters, dialog, form)
 │   ├── header.tsx                # App header / navigation
 │   ├── project-card.tsx          # Project list card
 │   ├── ai-analysis-panel.tsx     # AI analysis UI (streaming)
@@ -90,10 +91,10 @@ nextjs_space/
 │   ├── prisma.ts                 # Prisma client singleton
 │   ├── utils.ts                  # cn() and shared helpers
 │   ├── types.ts                  # Shared TS types
-│   └── i18n/                     # translations.ts (TR/EN) + provider/hook
-│   └── master-data/              # Master Data module (catalog kinds, equipment mapper/seed)
+│   ├── i18n/                     # translations.ts (TR/EN) + provider/hook
+│   └── master-data/              # types, mapper, validation, seed (catalog kinds registry)
 ├── prisma/
-│   └── schema.prisma             # MiningProject aggregate + EquipmentCatalogItem
+│   ├── schema.prisma             # MiningProject aggregate + EquipmentCatalogItem
 │   └── migrations/               # Prisma Migrate history
 ├── scripts/                      # Seed / utility scripts
 ├── public/                       # Static assets

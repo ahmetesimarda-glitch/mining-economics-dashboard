@@ -1,24 +1,8 @@
-import type {
-  EquipmentCatalogWriteInput,
-  ProjectEquipmentSnapshot,
-} from './equipment-types';
+import type { EquipmentCatalogWriteInput } from './types';
 import {
   EQUIPMENT_CATALOG_CATEGORIES,
   EQUIPMENT_POWER_TYPES,
-} from './equipment-types';
-
-type CatalogLike = {
-  manufacturer: string;
-  model: string;
-  category: string;
-  capacityLabel: string;
-  payloadTons: number;
-  bucketCapacityM3: number;
-  purchasePriceUsd: number;
-  fuelConsumptionLph: number;
-  maintenanceCostUsdYear: number;
-  powerType: string;
-};
+} from './types';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -56,6 +40,13 @@ export function isValidPowerType(value: string): boolean {
   return (EQUIPMENT_POWER_TYPES as readonly string[]).includes(value);
 }
 
+export type NormalizedEquipmentCatalogWrite = Required<
+  Omit<EquipmentCatalogWriteInput, 'code' | 'extraSpecs'>
+> & {
+  code: string;
+  extraSpecs: Record<string, unknown> | null;
+};
+
 /**
  * Normalize an untrusted API body into a Prisma-ready write payload.
  * Missing fields fall back to defaults; invalid category/powerType are replaced.
@@ -63,10 +54,7 @@ export function isValidPowerType(value: string): boolean {
 export function normalizeEquipmentCatalogInput(
   body: unknown,
   options: { requireModel?: boolean } = {}
-): { data: Required<Omit<EquipmentCatalogWriteInput, 'code' | 'extraSpecs'>> & {
-  code: string;
-  extraSpecs: Record<string, unknown> | null;
-}; error?: string } {
+): { data: NormalizedEquipmentCatalogWrite; error?: string } {
   const src = isPlainObject(body) ? body : {};
   const model = asString(src.model).trim();
   if (options.requireModel !== false && !model) {
@@ -89,9 +77,7 @@ export function normalizeEquipmentCatalogInput(
 
   const extraSpecs = isPlainObject(src.extraSpecs)
     ? (src.extraSpecs as Record<string, unknown>)
-    : src.extraSpecs === null
-      ? null
-      : null;
+    : null;
 
   return {
     data: {
@@ -118,10 +104,7 @@ export function normalizeEquipmentCatalogInput(
   };
 }
 
-function emptyWriteDefaults(): Required<Omit<EquipmentCatalogWriteInput, 'code' | 'extraSpecs'>> & {
-  code: string;
-  extraSpecs: Record<string, unknown> | null;
-} {
+function emptyWriteDefaults(): NormalizedEquipmentCatalogWrite {
   return {
     code: '',
     manufacturer: '',
@@ -143,49 +126,4 @@ function emptyWriteDefaults(): Required<Omit<EquipmentCatalogWriteInput, 'code' 
     isActive: true,
     sortOrder: 0,
   };
-}
-
-/**
- * Copy catalog values into a project Equipment row.
- * Intentionally does NOT set a foreign key — historical isolation.
- */
-export function snapshotCatalogToProjectEquipment(
-  catalog: CatalogLike,
-  overrides: Partial<ProjectEquipmentSnapshot> = {}
-): ProjectEquipmentSnapshot {
-  const unitCost = catalog.purchasePriceUsd;
-  const quantity = overrides.quantity ?? 1;
-  const spareQuantity = overrides.spareQuantity ?? 0;
-  const bucket = catalog.bucketCapacityM3;
-  const payload = catalog.payloadTons;
-
-  const base: ProjectEquipmentSnapshot = {
-    machineType: [catalog.manufacturer, catalog.model].filter(Boolean).join(' ').trim() || catalog.model,
-    model: catalog.model,
-    tonnageCapacity: catalog.capacityLabel || (payload > 0 ? `${payload} t` : ''),
-    quantity,
-    spareQuantity,
-    fuelConsumption: catalog.fuelConsumptionLph,
-    maintenanceCost: catalog.maintenanceCostUsdYear,
-    unitCost,
-    totalCost: (quantity + spareQuantity) * unitCost,
-    isCustom: false,
-    equipmentCategory: catalog.category || 'general',
-    dailyWorkHours: 8,
-    maintenancePeriodHours: 500,
-    operatorCount: 1,
-    powerType: catalog.powerType || 'diesel',
-    hourlyFuelConsumption: catalog.fuelConsumptionLph,
-    productionImpact: 0,
-    drillCapacity: 0,
-    holeDiameter: 0,
-    maxDrillDepth: 0,
-    bucketVolume: bucket,
-    transportCapacity: payload,
-    loadingCapacity: bucket,
-    crushingCapacity: 0,
-    gallerySuitability: '',
-  };
-
-  return { ...base, ...overrides, totalCost: ((overrides.quantity ?? base.quantity) + (overrides.spareQuantity ?? base.spareQuantity)) * (overrides.unitCost ?? base.unitCost) };
 }

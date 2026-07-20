@@ -1,4 +1,8 @@
-export { MASTER_DATA_CATALOG_KINDS, IMPLEMENTED_MASTER_DATA_CATALOGS, isImplementedCatalog } from './catalog-kinds';
+export {
+  MASTER_DATA_CATALOG_KINDS,
+  IMPLEMENTED_MASTER_DATA_CATALOGS,
+  isImplementedCatalog,
+} from './catalog-kinds';
 export type { MasterDataCatalogKind } from './catalog-kinds';
 
 export type {
@@ -6,21 +10,32 @@ export type {
   EquipmentCatalogWriteInput,
   EquipmentCatalogListQuery,
   EquipmentCatalogListResult,
+  EquipmentCatalogItemDto,
+  EquipmentCatalogFormState,
   EquipmentPowerType,
   ProjectEquipmentSnapshot,
-} from './equipment-types';
+  CatalogSnapshotSource,
+} from './types';
 export {
   EQUIPMENT_CATALOG_CATEGORIES,
   EQUIPMENT_POWER_TYPES,
-} from './equipment-types';
+} from './types';
 
 export {
   normalizeEquipmentCatalogInput,
-  snapshotCatalogToProjectEquipment,
   slugifyEquipmentCode,
   isValidEquipmentCategory,
   isValidPowerType,
-} from './equipment-mapper';
+} from './validation';
+export type { NormalizedEquipmentCatalogWrite } from './validation';
+
+export {
+  snapshotCatalogToProjectEquipment,
+  equipmentCatalogItemToForm,
+  equipmentCatalogFormToPayload,
+  EMPTY_EQUIPMENT_CATALOG_FORM,
+  formatEquipmentUsd,
+} from './mapper';
 
 export { buildEquipmentCatalogSeedRows } from './equipment-seed-data';
 export type { EquipmentCatalogSeedRow } from './equipment-seed-data';

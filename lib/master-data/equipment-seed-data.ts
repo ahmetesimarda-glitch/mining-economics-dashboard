@@ -1,5 +1,5 @@
 import { EQUIPMENT_REFERENCE } from '@/lib/market-reference';
-import { slugifyEquipmentCode } from './equipment-mapper';
+import { slugifyEquipmentCode } from './validation';
 
 export interface EquipmentCatalogSeedRow {
   code: string;

@@ -47,8 +47,9 @@ The key architectural rule is that **business logic never imports Prisma or `nex
 - **`app/`** — App Router routes. Page routes (server/client components) render the dashboard UI; `app/layout.tsx` provides the root layout (including the Abacus app script and theme provider) and `app/globals.css` holds global styles.
 - **`app/api/`** — backend Route Handlers. Notable groups: `app/api/projects/` (project CRUD), `app/api/projects/[id]/ai-analysis/` (streaming AI), `app/api/projects/[id]/pdf/` (PDF export), `app/api/market/` (live commodity/FX prices with in-memory caching), `app/api/master-data/equipment/` (Equipment Catalog CRUD).
 - **`components/`** — reusable React components: UI primitives under `components/ui/` (shadcn/Radix-based), plus feature components (charts, forms, maps, panels). Prefer extending these over creating new primitives.
-- **`lib/`** — framework-agnostic logic: `calculations.ts` (economic engine), `prisma.ts` (DB client), `market-reference.ts` (catalogs/constants), `master-data/` (Master Data types/mappers/seed builders), `i18n/translations.ts` (TR/EN strings), utility helpers.
-- **`app/master-data/`** — Master Data UI pages (Equipment Catalog first).
+- **`lib/`** — framework-agnostic logic: `calculations.ts` (economic engine), `prisma.ts` (DB client), `market-reference.ts` (catalogs/constants), `master-data/` (`types.ts`, `mapper.ts`, `validation.ts`, seed builders), `i18n/translations.ts` (TR/EN strings), utility helpers.
+- **`app/master-data/`** — Master Data page shells (Equipment Catalog first).
+- **`components/master-data/`** — reusable Master Data UI pieces (`EquipmentTable`, `EquipmentFilters`, `EquipmentDialog`, …).
 - **`prisma/`** — `schema.prisma` (single source of truth for the data model). See `DATABASE.md`.
 - **`scripts/`** — operational scripts: `seed.ts` and `safe-seed.ts` (idempotent seeding).
 - **`hooks/`** — shared React hooks (e.g. `use-toast`).
