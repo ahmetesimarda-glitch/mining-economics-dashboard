@@ -235,3 +235,50 @@ model MethodSpecificCost {
 
   @@index([projectId])
 }
+
+// =============================================================================
+// Master Data — Equipment Catalog (system reference; not owned by a project)
+// Projects copy (snapshot) values into Equipment children; catalog edits never
+// mutate historical project fleets. Future catalogs (commodity, country, …)
+// follow the same standalone-root pattern under Master Data.
+// =============================================================================
+model EquipmentCatalogItem {
+  id        String @id @default(cuid())
+  /// Stable business key for idempotent seeds (e.g. "truck-cat-770g")
+  code      String @unique
+
+  // --- General ---
+  manufacturer String @default("")
+  model        String
+  category     String // truck | excavator | loader | dozer | grader | drill | underground | crusher | support | general
+  description  String @default("")
+
+  // --- Technical ---
+  capacityLabel       String @default("") // free-text capacity / class label
+  payloadTons         Float  @default(0)
+  bucketCapacityM3    Float  @default(0)
+  enginePowerKw       Float  @default(0)
+  operatingWeightTons Float  @default(0)
+
+  // --- Economic ---
+  purchasePriceUsd       Float @default(0)
+  fuelConsumptionLph     Float @default(0)
+  usefulLifeYears        Float @default(10)
+  availabilityPct        Float @default(85)
+  maintenanceCostUsdYear Float @default(0)
+  powerType              String @default("diesel") // diesel | electric | hybrid
+
+  // --- Extensibility (additive fields without forced migrations) ---
+  extraSpecs Json?
+
+  // --- Metadata ---
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+  @@index([manufacturer])
+  @@index([model])
+}

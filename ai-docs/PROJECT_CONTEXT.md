@@ -91,8 +91,10 @@ nextjs_space/
 │   ├── utils.ts                  # cn() and shared helpers
 │   ├── types.ts                  # Shared TS types
 │   └── i18n/                     # translations.ts (TR/EN) + provider/hook
+│   └── master-data/              # Master Data module (catalog kinds, equipment mapper/seed)
 ├── prisma/
-│   └── schema.prisma             # 8 models (see §5)
+│   └── schema.prisma             # MiningProject aggregate + EquipmentCatalogItem
+│   └── migrations/               # Prisma Migrate history
 ├── scripts/                      # Seed / utility scripts
 ├── public/                       # Static assets
 ├── types/                        # Ambient type declarations
@@ -103,6 +105,8 @@ nextjs_space/
 ```
 
 > **Preserve this structure.** Do not relocate the calculation engine, API route files, or Prisma schema. The folder conventions are load-bearing for both the Abacus build and the GitHub/Docker self-host path.
+
+Master Data UI/API live under `app/master-data/**` and `app/api/master-data/**`. Only the Equipment catalog is implemented; other catalog kinds are reserved in `lib/master-data/catalog-kinds.ts`.
 
 ---
 
@@ -123,6 +127,7 @@ nextjs_space/
 13. **Comparison** (`app/compare`): side-by-side comparison of multiple projects.
 14. **Exports**: **Excel** (`/api/projects/[id]/xlsx`) and **PDF** (`/api/projects/[id]/pdf`).
 15. **Internationalization**: full TR/EN switching via `lib/i18n`.
+16. **Master Data — Equipment Catalog** (`/master-data/equipment`, `/api/master-data/equipment`): CRUD catalog with search/filter/pagination; project form can snapshot items into the fleet.
 
 ---
 
@@ -138,8 +143,9 @@ See `prisma/schema.prisma` for the authoritative definitions. Eight models:
 - **`Personnel`** — staffing records.
 - **`ByProduct`** — by-product revenue contributors.
 - **`MethodSpecificCost`** — mining-method-specific cost items.
+- **`EquipmentCatalogItem`** — Master Data equipment catalog (standalone; not cascade-owned by a project). Seeded from `EQUIPMENT_REFERENCE`; projects snapshot into `Equipment`.
 
-All child models reference `MiningProject` and **cascade-delete** when the parent project is deleted. `projectId` is indexed on child tables.
+All child models of `MiningProject` reference it and **cascade-delete** when the parent project is deleted. `projectId` is indexed on child tables.
 
 ---
 

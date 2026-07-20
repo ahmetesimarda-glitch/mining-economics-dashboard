@@ -33,6 +33,10 @@ MiningProject (1)
 
 All relations are one-to-many from `MiningProject` to the child tables. There are no many-to-many relations and no self-references. Every foreign key is declared with `onDelete: Cascade`, so deleting a project removes all of its dependent rows in a single operation.
 
+### Master Data (standalone roots)
+
+`EquipmentCatalogItem` is **not** a child of `MiningProject`. It is the first Master Data catalog table: system reference equipment (manufacturer, model, technical and economic parameters). Projects copy (snapshot) values into `Equipment` rows via the project form; catalog edits never rewrite historical fleets. There is intentionally **no** foreign key from `Equipment` → `EquipmentCatalogItem` in this version.
+
 ---
 
 ## 3. Models
@@ -156,6 +160,16 @@ All relations are one-to-many from `MiningProject` to the child tables. There ar
 
 ---
 
+### 3.9 EquipmentCatalogItem (Master Data)
+
+**Purpose:** system equipment catalog — the first Master Data entity. Stores manufacturer/model, category, technical specs (payload, bucket, power, weight), economic params (list price, fuel L/h, useful life, availability, annual maintenance), `powerType`, optional `extraSpecs` JSON for forward-compatible fields, and `isActive` / timestamps.
+
+**Primary key:** `id` (cuid). **Unique:** `code` (stable seed key). **Indexes:** `category`, `isActive`, `manufacturer`, `model`.
+
+**Not related to projects via FK.** The project form snapshots selected catalog rows into `Equipment` children.
+
+---
+
 ## 4. Data Lifecycle
 
 1. **Create (POST `/api/projects`):** the request body is defensively defaulted field by field. Derived totals are computed in application code before any database write: `Equipment.totalCost`, `Personnel.annualCost`, `ByProduct.totalRevenue`, then `calculateTotalCapex`, `calculateTotalOpex`, and `performFullAnalysis`. `MethodSpecificCost` rows without a `name` are dropped. Everything is written in a single `prisma.miningProject.create` with **nested `create`** for all child collections, so a project and all its children are inserted atomically.
@@ -180,6 +194,7 @@ All relations are one-to-many from `MiningProject` to the child tables. There ar
 
 ## 6. Future Expansion Notes
 
+- **Master Data catalogs:** `EquipmentCatalogItem` is the first implemented catalog. Future catalogs (commodity, country, currency, units, fuel types, processing methods, labour categories) should follow the same standalone-root pattern — no FK from projects into catalog rows for live joins. Projects **snapshot** values at write time.
 - **Authentication tables:** `next-auth` and `@next-auth/prisma-adapter` are installed but there are currently **no** `User`/`Account`/`Session`/`VerificationToken` models in the schema. Adding auth means introducing those models (and a `MiningProject.userId` owner relation) as an additive, non-destructive migration.
 - **Introducing enums:** enum-like `String` fields could be promoted to Prisma `enum` types for stronger typing, but doing so is a breaking migration and requires backfilling/validating existing values first.
 - **Auditing & soft-delete:** child tables have no timestamps and deletes are hard cascades. If history or soft-delete is needed, add `deletedAt`/audit columns additively rather than changing cascade behavior.

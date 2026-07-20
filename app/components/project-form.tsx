@@ -25,10 +25,34 @@ import {
   toNumber,
   coerceNumericFields,
 } from '@/lib/number-input';
+import { snapshotCatalogToProjectEquipment } from '@/lib/master-data';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface ProjectFormProps {
   initialData?: any;
   isEditing?: boolean;
+}
+
+interface CatalogPickItem {
+  id: string;
+  manufacturer: string;
+  model: string;
+  category: string;
+  capacityLabel: string;
+  purchasePriceUsd: number;
+  fuelConsumptionLph: number;
+  maintenanceCostUsdYear: number;
+  powerType: string;
+  payloadTons: number;
+  bucketCapacityM3: number;
+  description: string;
 }
 
 /** Scalar form fields that must be finite numbers in the API payload. */
@@ -92,6 +116,11 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [expandedEquip, setExpandedEquip] = useState<number | null>(null);
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogItems, setCatalogItems] = useState<CatalogPickItem[]>([]);
+  const [catalogQuery, setCatalogQuery] = useState('');
+  const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
 
   const defaults = {
     name: '', mineType: 'lignite', miningMethod: 'openPit', location: '',
@@ -177,6 +206,42 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
       transportCapacity: 0, loadingCapacity: 0, crushingCapacity: 0, gallerySuitability: '',
     };
     setEquipments((prev: any[]) => [...prev, base]);
+  };
+
+  const openCatalogPicker = async () => {
+    setCatalogOpen(true);
+    setSelectedCatalogId(null);
+    setCatalogLoading(true);
+    try {
+      const params = new URLSearchParams({
+        isActive: 'true',
+        pageSize: '100',
+        sort: 'sortOrder',
+        order: 'asc',
+      });
+      if (catalogQuery.trim()) params.set('q', catalogQuery.trim());
+      const res = await fetch(`/api/master-data/equipment?${params.toString()}`);
+      if (!res.ok) {
+        toast.error(t('equipCat.loadError'));
+        return;
+      }
+      const data = (await res.json()) as { items?: CatalogPickItem[] };
+      setCatalogItems(data.items ?? []);
+    } catch {
+      toast.error(t('equipCat.loadError'));
+    } finally {
+      setCatalogLoading(false);
+    }
+  };
+
+  const addEquipmentFromCatalog = () => {
+    const item = catalogItems.find((c) => c.id === selectedCatalogId);
+    if (!item) return;
+    const snapshot = snapshotCatalogToProjectEquipment(item);
+    setEquipments((prev: any[]) => [...prev, snapshot]);
+    setCatalogOpen(false);
+    setSelectedCatalogId(null);
+    toast.success(`${item.manufacturer} ${item.model}`.trim());
   };
   const removeEquipment = (i: number) => setEquipments((prev: any[]) => prev.filter((_: any, idx: number) => idx !== i));
 
@@ -428,6 +493,13 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
               </h4>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-muted-foreground">Toplam: <strong className="text-foreground font-mono">{(totalEquipmentCost / 1_000_000).toFixed(3)} MUSD</strong></span>
+                <button
+                  type="button"
+                  onClick={() => void openCatalogPicker()}
+                  className="flex items-center gap-1 text-xs bg-card border border-border/50 text-foreground px-3 py-1.5 rounded-lg hover:bg-accent"
+                >
+                  <Database className="h-3 w-3" /> {t('equipCat.addFromCatalog')}
+                </button>
                 <button type="button" onClick={addEquipment} className="flex items-center gap-1 text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90">
                   <Plus className="h-3 w-3" /> Makine Ekle
                 </button>
@@ -935,6 +1007,87 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
           </div>
         </div>
       </main>
+
+      <Dialog open={catalogOpen} onOpenChange={setCatalogOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{t('equipCat.pickTitle')}</DialogTitle>
+          </DialogHeader>
+          <div className="flex gap-2 mb-3">
+            <input
+              value={catalogQuery}
+              onChange={(e) => setCatalogQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void openCatalogPicker();
+              }}
+              placeholder={t('equipCat.searchPlaceholder')}
+              className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <Button type="button" variant="secondary" onClick={() => void openCatalogPicker()}>
+              {t('equipCat.search')}
+            </Button>
+          </div>
+          <div className="flex-1 overflow-y-auto space-y-1 min-h-[200px] max-h-[50vh] pr-1">
+            {catalogLoading ? (
+              <div className="flex items-center justify-center py-10 text-muted-foreground text-sm">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                {t('equipCat.loading')}
+              </div>
+            ) : catalogItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-10">{t('equipCat.pickEmpty')}</p>
+            ) : (
+              catalogItems.map((item) => {
+                const selected = selectedCatalogId === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedCatalogId(item.id)}
+                    className={cn(
+                      'w-full text-left rounded-lg border px-3 py-2.5 transition-colors',
+                      selected
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border/50 hover:bg-accent/50'
+                    )}
+                  >
+                    <div className="flex justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-medium">
+                          {[item.manufacturer, item.model].filter(Boolean).join(' ')}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {getCategoryLabel(item.category)}
+                          {item.capacityLabel ? ` · ${item.capacityLabel}` : ''}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-mono">
+                          {item.purchasePriceUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })} USD
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {item.fuelConsumptionLph} lt/sa
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+          <DialogFooter className="mt-4">
+            <Button type="button" variant="outline" onClick={() => setCatalogOpen(false)}>
+              {t('equipCat.cancel')}
+            </Button>
+            <Button
+              type="button"
+              disabled={!selectedCatalogId}
+              onClick={addEquipmentFromCatalog}
+            >
+              {t('equipCat.pickConfirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
