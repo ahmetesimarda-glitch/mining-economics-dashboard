@@ -1,0 +1,162 @@
+---
+description: Enterprise engineering rules for the Mining Economics Dashboard (Next.js 14 + TypeScript + Prisma/PostgreSQL). Enforces reading the ai-docs knowledge base before editing, protecting the financial calculation engine and DB/API invariants, strict TypeScript, architectural preservation, and doc synchronization. Applies to every task.
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+# Mining Economics Dashboard — Cursor Rules
+
+You are working on the **Mining Economics Dashboard**: a full-stack **Next.js 14 (App Router) + React 18 + TypeScript (strict) + Prisma 6.7 / PostgreSQL** application for the techno-economic feasibility analysis of mining projects. It computes cash flow, NPV, IRR, payback, breakeven, sensitivity, economic-sensitivity, tornado, Monte Carlo, environmental (CO₂), financing (PMT/DSCR), and operational analyses, exposes streaming AI narrative analysis, and exports Excel/PDF. The economic engine lives in `lib/calculations.ts` and is the single source of truth for every number on screen.
+
+These rules are binding on **every** task. When any rule conflicts with a user request, follow the user — but if the request would change a financial formula, break an API/DB invariant, or run a destructive migration, **stop and confirm first**.
+
+---
+
+## 0. Non-negotiable invariants (read first)
+
+Never violate these without an explicit, specific user instruction:
+- The financial formulas, default parameters, and constants in `lib/calculations.ts` are **frozen**.
+- Year 0 cash flow = −(totalCapex + forestCost + landCost + rehabilitationCost).
+- Royalty is charged on **revenue**; tax is charged **only when taxable income > 0**; all headline results are in **MUSD**.
+- Prisma: `@@unique([projectId, year])` on `CashFlowYear`, `onDelete: Cascade` on every child relation, and `@@index([projectId])` / `@@index([status])` must remain.
+- Every route under `app/api/**` keeps `export const dynamic = "force-dynamic"`.
+- TypeScript stays `strict: true`. No `any`, no `@ts-ignore`, no loosening `tsconfig.json`.
+- Package manager is **yarn**. Target **Next.js 14 / React 18** — never upgrade to Next 15 / React 19.
+- Never run `prisma db push --accept-data-loss` or `--force-reset` without explicit confirmation.
+- Never commit or expose secrets (`DATABASE_URL`, `ABACUSAI_API_KEY`); read them from the environment, server-side only.
+
+---
+
+## 1. Read the knowledge base before editing (mandatory)
+
+Before writing or changing **any** code, read the source-of-truth documents in `ai-docs/` and treat them as authoritative:
+- `ai-docs/PROJECT_CONTEXT.md` — architecture, stack, folder structure, features, data flow.
+- `ai-docs/BUSINESS_RULES.md` — every financial formula and invariant (Year-0, royalty, tax gating, MUSD scaling, IRR bisection, Monte Carlo params, emissions, rehabilitation phasing, risk matrix, scenarios, financing/DSCR).
+- `ai-docs/DATABASE.md` — the 8-model schema, keys, indexes, relations, cascade behavior, data lifecycle, query patterns.
+- `ai-docs/ARCHITECTURE.md` — layering (presentation / API / business logic / data / reference), folder responsibilities, rendering, export, AI, deployment.
+- `ai-docs/CODING_STANDARDS.md` — TypeScript/React/Next.js/Prisma/API conventions, naming, error handling, security, performance, forbidden practices.
+- `ai-docs/ROADMAP.md` — what is completed vs. planned; do not regress completed modules; keep future work additive.
+- `ai-docs/PROMPTS.md` — the required task workflow and guardrails for AI-assisted changes.
+- `ai-docs/RELEASE_CHECKLIST.md` — the verification bar a change must meet before it is “done.”
+
+If the task touches economics, **re-read the relevant `BUSINESS_RULES.md` section first**. Never guess how a value is calculated — trace it to a function in `lib/calculations.ts`. Never guess the architecture — confirm it against these docs and the actual tree.
+
+---
+
+## 2. Architecture rules
+
+- **Respect the existing layering.** HTTP concerns live in `app/api/**/route.ts`; economic/domain logic lives in `lib/calculations.ts` and other `lib/` modules; data access goes through the Prisma singleton `@/lib/prisma`; reusable UI lives in `app/components/` and `components/ui/`. Never mix these (no Prisma in the engine, no financial math in components/routes).
+- **Preserve the folder structure** documented in `PROJECT_CONTEXT.md`. Do not relocate the calculation engine, API routes, Prisma schema, or `lib/i18n`.
+- **Never move or rename files, functions, types, routes, or components as an incidental side effect.** A rename/move must be the explicit subject of the request.
+- **No duplicate utilities or components.** Reuse `lib/utils.ts`, `lib/calculations.ts`, `lib/market-reference.ts`, `lib/i18n`, and the Radix-based primitives in `components/ui/` before writing anything new. Compose existing engine functions instead of re-deriving math.
+- **Follow existing conventions** for data fetching, charts (Recharts / Chart.js / Plotly), maps (Leaflet / MapLibre), theming (`next-themes`, dark default), and i18n. Keep the codebase internally consistent.
+
+---
+
+## 3. Database rules (Prisma / PostgreSQL)
+
+- **Analyze `prisma/schema.prisma` and `DATABASE.md` before any DB change.** The model is one root aggregate `MiningProject` with seven cascade-deleted children (`CashFlowYear`, `CapexItem`, `OpexItem`, `Equipment`, `Personnel`, `ByProduct`, `MethodSpecificCost`).
+- **Additive and backward-compatible only.** Do not remove or rename models, fields, or relations without an explicit request. New required columns need a default or an explicit backfill.
+- **Always generate migrations / regenerate the client** (`yarn prisma generate`) after schema edits, and keep `binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]` intact (required for the Alpine container).
+- **Preserve relations, cascade deletes, and indexes** (`@@unique([projectId, year])`, `@@index([projectId])`, `@@index([status])`) unless their change is the explicit request.
+- **Preserve the write model:** create uses nested `create`; update uses **delete-and-recreate** of child collections with recomputed cached results. Keep derived values computed at write time (`Equipment.totalCost = (quantity + spareQuantity) * unitCost`, `Personnel.annualCost = count * monthlySalary * 12`, `ByProduct.totalRevenue = annualProduction * unitPrice`) and drop blank rows (e.g. `MethodSpecificCost` requires a non-empty `name`).
+- **Use the Prisma singleton** `@/lib/prisma`; never instantiate `new PrismaClient()` in a route or component. Assume ephemeral connections and a limited pool — no long transactions or session state.
+- **Never** run destructive migrations (`--accept-data-loss`, `--force-reset`) without explicit confirmation. Keep `scripts/seed.ts` / `scripts/safe-seed.ts` idempotent (upserts, no destructive deletes).
+
+---
+
+## 4. API rules
+
+- **Preserve every existing endpoint** under `app/api/**` and its HTTP-method signature. The frontend and external flows depend on them. Do not remove, rename, or change method contracts without explicit approval.
+- **Keep `export const dynamic = "force-dynamic"`** on all routes — responses depend on live DB state and runtime env, not build-time snapshots.
+- **Maintain backward compatibility and consistent response formats.** Analysis routes (`sensitivity`, `economic-sensitivity`, `tornado`, `montecarlo`, `environmental`, `financing`, `operational`) **read-and-recompute and return JSON — they must never mutate the project.**
+- **Validate inputs at the boundary.** The current pattern is defensive defaulting (`body?.field ?? default`); if you introduce `zod` validation, apply it consistently and keep accepted shapes and error responses unchanged.
+- **Handle errors consistently:** wrap I/O in `try/catch`, log `console.error('<context>:', error)`, and return the conventional shapes — `404 { error: 'Proje bulunamadı' }` when a project is missing, `500 { error: <message> }` on failure, and the project **list** endpoint degrades to `[]` at HTTP 200. Preserve the AI streaming contract (`ReadableStream`, `Content-Type: text/event-stream; charset=utf-8`, `finalizeBuffer` repair) and the PDF flow (`createConvertHtmlToPdfRequest` → poll `getConvertHtmlToPdfStatus` → base64→Buffer).
+- **No breaking API changes without approval.**
+
+---
+
+## 5. Business logic rules (financial engine)
+
+- `lib/calculations.ts` is the **only** place economic math may live. Do not duplicate or re-implement any formula in a route, component, or export.
+- **Never modify** cash-flow, NPV, IRR, payback, breakeven, sensitivity, economic-sensitivity, tornado, Monte Carlo (2000 iterations; σ price 15% / cost 10% / production 8%; floor 0.5×; 20-bin histogram), environmental (diesel CO₂ factor 2.68; electric excluded; 5-phase rehabilitation), financing (PMT annuity, DSCR), or scenario logic (pessimistic/normal/optimistic multipliers) **unless the user explicitly and specifically requests that exact change.**
+- Preserve the exported types (`ProjectParams`, `CashFlowRow`, `AnalysisResult`, `OperationalMetrics`, `FuelAnalysisItem`, `MaintenanceAnalysisItem`, `PersonnelProductivityItem`, `ScenarioResult`) and function signatures; other layers depend on them.
+- If you believe a formula is wrong, **stop and ask** — do not “fix” it silently to make a number look right.
+- **Before implementing any approved business-logic change**, first explain in writing: what formula/constant changes, why, which modules/routes consume it, and the expected effect on outputs. Then update `BUSINESS_RULES.md` in the same change.
+
+---
+
+## 6. TypeScript rules
+
+- Keep `strict: true`. **Never use `any`**; use precise types, `unknown` with narrowing, generics, the shared types in `lib/types.ts`, the engine types, or Prisma-generated types.
+- **Never ignore or suppress TypeScript errors** (`@ts-ignore`, `@ts-nocheck`) or loosen `tsconfig.json`. The self-host build enforces type errors (`typescript.ignoreBuildErrors: false`).
+- Define proper, reusable interfaces for API request/response shapes; do not create parallel/duplicate type definitions.
+- Use the `@/*` path alias for imports.
+
+---
+
+## 7. Next.js rules
+
+- **App Router only.** New pages/endpoints follow `app/` conventions.
+- **Prefer Server Components.** Add `"use client"` only when the component needs state, effects, browser APIs, or event handlers (forms, charts, maps, the AI panel are legitimately client components).
+- Keep `force-dynamic` on API routes and on any page that reads runtime env or live DB state.
+- Do not add config that breaks either build target: `next.config.js` (managed/preview, standalone via `NEXT_OUTPUT_MODE`) or `next.config.github.js` (self-host `output: 'standalone'`).
+
+---
+
+## 8. React rules
+
+- Build reusable components; favor **composition over duplication**; extend `components/ui/` primitives rather than cloning them.
+- Minimize unnecessary re-renders (stable keys, memoization where it measurably helps, lift state only as needed) without premature complexity.
+- Use hooks correctly (rules of hooks, complete dependency arrays); put browser-only logic in effects.
+- **Deterministic render:** never use `Math.random()`, `Date.now()`, or `new Date()` in render, state initialization, or default props (causes hydration mismatches); never access `window`/`document` during SSR. Keep charts/maps client-only.
+- Route all user-facing strings through `lib/i18n/translations.ts` with **both TR and EN** entries — never hardcode visible text.
+
+---
+
+## 9. Performance rules
+
+- **Compute once, cache on write.** Headline metrics are cached on `MiningProject`; do not recompute heavy analytics (e.g. the 2000-iteration Monte Carlo) on read/dashboard paths.
+- **Avoid duplicated/oversized queries.** Prefer scalar `select` over full `include` fan-out; use indexed columns (`status`, `projectId`) for filtering; reuse the `/api/market` short-TTL in-memory cache pattern for volatile external data.
+- **Reuse expensive results** rather than recomputing; import heavy chart/map libraries only in the client components that need them.
+- Optimize external API usage (AI, PDF, market) — batch/cache where possible and handle upstream failure/timeouts.
+
+---
+
+## 10. Security rules
+
+- **Never expose secrets or hardcode credentials.** `DATABASE_URL` and `ABACUSAI_API_KEY` are read from the environment in server code only, never in client components, `NEXT_PUBLIC_*`, logs, or committed files.
+- **Validate and normalize every untrusted input** at the API boundary before it reaches the database or the engine.
+- **Escape/guard dangerous output;** do not leak internal error details or unrelated projects' data in responses.
+- **Respect the authentication/authorization architecture.** Auth is not yet implemented (`next-auth` is installed but unused — see `ROADMAP.md`); if you add it, do so additively (owner `userId` relation, ownership-scoped queries) and configure `NEXTAUTH_URL`/`NEXTAUTH_SECRET` via env. Do not silently expose data across tenants.
+
+---
+
+## 11. Documentation rules
+
+- After any **major** change (new module, new/changed endpoint, changed data flow, additive schema change, or — only when explicitly requested — a changed formula), update the relevant `ai-docs/` file(s) **in the same change** so docs never drift from code.
+- Keep the docs repository-specific and mutually consistent. Do not modify the source-of-truth docs unless the underlying code actually changed.
+
+---
+
+## 12. Workflow rules
+
+**Before coding:**
+1. Read the relevant `ai-docs/` files (§1) and understand the repository.
+2. Search the tree to identify **every** file and code path the change affects; confirm compatibility with all of them.
+3. State a concise implementation plan: what changes, where it lives per the layering, schema/API impact (additive, signature-preserving), engine reuse (no formula change), and i18n keys.
+
+**While coding:**
+- Make minimal, atomic edits — change only what the task requires; do not refactor, reformat, or “tidy” unrelated code. Patch against the current file contents, and ensure every symbol you reference actually exists in the tree.
+
+**After coding:**
+- **Explain every modified file and why** the change was necessary.
+- Explain the architectural decisions taken.
+- List potential risks and how to verify the change against `RELEASE_CHECKLIST.md` (especially financial correctness, Monte Carlo/sensitivity/tornado outputs, DB safety, API contracts, and regression of completed modules).
+
+---
+
+## 13. Quality bar
+
+Every change is judged on: **financial correctness** first, then maintainability, scalability, readability, performance, security, long-term stability, and repository consistency. When these tensions arise, protect the financial engine and data integrity above convenience or cleverness. Deliver production-ready code — no placeholders, dead code, or TODO stubs — and prefer the smallest correct diff that meets this bar.
