@@ -19,11 +19,36 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n/context';
+import {
+  parseNumericInput,
+  parseIntegerInput,
+  toNumber,
+  coerceNumericFields,
+} from '@/lib/number-input';
 
 interface ProjectFormProps {
   initialData?: any;
   isEditing?: boolean;
 }
+
+/** Scalar form fields that must be finite numbers in the API payload. */
+const NUMERIC_FORM_KEYS = [
+  'projectLifeYears', 'discountRate', 'taxRate', 'royaltyRate',
+  'creditRate', 'creditYears', 'exchangeRate',
+  'fuelPricePerLiter', 'electricityUnitPrice', 'explosiveUnitPrice',
+  'totalReserves', 'maxAnnualCapacity', 'oreGrade',
+  'unitPrice', 'annualProduction', 'plantProcessingRate',
+  'equipmentCost', 'facilityCost', 'infrastructureCost', 'contingencyRate',
+  'fuelCost', 'personnelCost', 'maintenanceCost', 'explosivesCost',
+  'tireCost', 'strippingCost', 'otherOpex',
+  'forestCost', 'landCost', 'rehabilitationCost',
+  'annualStrippingVolume', 'strippingUnitCost',
+  'contractorStrippingCost', 'plantOperatingCost',
+  'equipmentDepLife', 'facilityDepLife',
+  'waterConsumptionDaily', 'rehabilitationAreaHa', 'rehabilitationCostPerHa',
+  'loanAmount', 'loanInterestRate', 'loanTermYears', 'equityRatio',
+  'latitude', 'longitude',
+] as const;
 
 function FormField({ label, name, value, onChange, type = 'number', suffix, icon: Icon, placeholder, className: fieldClassName }: any) {
   return (
@@ -123,7 +148,8 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
     const { name, value, type } = e?.target ?? {};
     setForm((prev: any) => ({
       ...(prev ?? {}),
-      [name ?? '']: type === 'number' ? (value === '' ? 0 : parseFloat(value)) : value,
+      // Keep empty while editing; coerce to 0 only on submit (see handleSubmit).
+      [name ?? '']: type === 'number' ? parseNumericInput(String(value ?? '')) : value,
     }));
   };
 
@@ -133,9 +159,9 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
       if (['quantity', 'unitCost', 'spareQuantity'].includes(field)) {
-        const q = field === 'quantity' ? value : (next[index]?.quantity ?? 1);
-        const sq = field === 'spareQuantity' ? value : (next[index]?.spareQuantity ?? 0);
-        const uc = field === 'unitCost' ? value : (next[index]?.unitCost ?? 0);
+        const q = toNumber(field === 'quantity' ? value : next[index]?.quantity, 1);
+        const sq = toNumber(field === 'spareQuantity' ? value : next[index]?.spareQuantity, 0);
+        const uc = toNumber(field === 'unitCost' ? value : next[index]?.unitCost, 0);
         next[index].totalCost = (q + sq) * uc;
       }
       return next;
@@ -160,8 +186,8 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
       if (['count', 'monthlySalary'].includes(field)) {
-        const c = field === 'count' ? value : (next[index]?.count ?? 1);
-        const ms = field === 'monthlySalary' ? value : (next[index]?.monthlySalary ?? 0);
+        const c = toNumber(field === 'count' ? value : next[index]?.count, 1);
+        const ms = toNumber(field === 'monthlySalary' ? value : next[index]?.monthlySalary, 0);
         next[index].annualCost = c * ms * 12;
       }
       return next;
@@ -176,8 +202,8 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
       if (['annualProduction', 'unitPrice'].includes(field)) {
-        const ap = field === 'annualProduction' ? value : (next[index]?.annualProduction ?? 0);
-        const up = field === 'unitPrice' ? value : (next[index]?.unitPrice ?? 0);
+        const ap = toNumber(field === 'annualProduction' ? value : next[index]?.annualProduction, 0);
+        const up = toNumber(field === 'unitPrice' ? value : next[index]?.unitPrice, 0);
         next[index].totalRevenue = ap * up;
       }
       return next;
@@ -187,7 +213,7 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
   const removeByProduct = (i: number) => setByProducts((prev: any[]) => prev.filter((_: any, idx: number) => idx !== i));
 
   // Method cost handlers
-  const updateMethodCost = (index: number, value: number) => {
+  const updateMethodCost = (index: number, value: number | '') => {
     setMethodCosts((prev: any[]) => {
       const next = [...prev];
       next[index] = { ...next[index], value };
@@ -197,19 +223,31 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
   const addMethodCost = () => setMethodCosts((prev: any[]) => [...prev, { name: '', category: form?.miningMethod === 'openPit' ? 'openPit' : 'underground', value: 0, unit: 'MUSD' }]);
   const removeMethodCost = (i: number) => setMethodCosts((prev: any[]) => prev.filter((_: any, idx: number) => idx !== i));
 
-  // Calculate summaries
-  const totalEquipmentCost = equipments.reduce((s: number, e: any) => s + ((e?.quantity ?? 1) + (e?.spareQuantity ?? 0)) * (e?.unitCost ?? 0), 0);
-  const totalPersonnelCost = personnels.reduce((s: number, p: any) => s + (p?.count ?? 1) * (p?.monthlySalary ?? 0) * 12, 0);
-  const totalByProductRevenue = byProducts.reduce((s: number, b: any) => s + (b?.annualProduction ?? 0) * (b?.unitPrice ?? 0), 0);
-  const totalMethodCost = methodCosts.reduce((s: number, c: any) => s + (c?.value ?? 0), 0);
+  // Calculate summaries (empty drafts count as 0 / field defaults)
+  const totalEquipmentCost = equipments.reduce(
+    (s: number, e: any) => s + (toNumber(e?.quantity, 1) + toNumber(e?.spareQuantity, 0)) * toNumber(e?.unitCost, 0),
+    0
+  );
+  const totalPersonnelCost = personnels.reduce(
+    (s: number, p: any) => s + toNumber(p?.count, 1) * toNumber(p?.monthlySalary, 0) * 12,
+    0
+  );
+  const totalByProductRevenue = byProducts.reduce(
+    (s: number, b: any) => s + toNumber(b?.annualProduction, 0) * toNumber(b?.unitPrice, 0),
+    0
+  );
+  const totalMethodCost = methodCosts.reduce((s: number, c: any) => s + toNumber(c?.value, 0), 0);
   const totalFuelFromEquip = equipments.reduce((s: number, e: any) => {
-    const hourly = e?.hourlyFuelConsumption ?? 0;
-    const daily = e?.dailyWorkHours ?? 8;
-    const qty = e?.quantity ?? 1;
-    const fuelPrice = form?.fuelPricePerLiter ?? 0;
+    const hourly = toNumber(e?.hourlyFuelConsumption, 0);
+    const daily = toNumber(e?.dailyWorkHours, 8);
+    const qty = toNumber(e?.quantity, 1);
+    const fuelPrice = toNumber(form?.fuelPricePerLiter, 0);
     return s + (hourly * daily * 365 * qty * fuelPrice);
   }, 0);
-  const totalMaintFromEquip = equipments.reduce((s: number, e: any) => s + (e?.quantity ?? 1) * (e?.maintenanceCost ?? 0), 0);
+  const totalMaintFromEquip = equipments.reduce(
+    (s: number, e: any) => s + toNumber(e?.quantity, 1) * toNumber(e?.maintenanceCost, 0),
+    0
+  );
 
   const handleSubmit = async () => {
     if (!(form?.name ?? '').trim()) {
@@ -219,17 +257,52 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
     }
     setSaving(true);
     try {
+      // Coerce empty drafts → numbers only at submit so the API/engine stay unchanged.
+      const coercedForm = coerceNumericFields({ ...form }, NUMERIC_FORM_KEYS);
       const payload = {
-        ...form,
+        ...coercedForm,
         equipmentCost: totalEquipmentCost / 1_000_000,
         personnelCost: totalPersonnelCost / 1_000_000,
-        fuelCost: (form?.fuelCost ?? 0) + totalFuelFromEquip / 1_000_000,
-        maintenanceCost: (form?.maintenanceCost ?? 0) + totalMaintFromEquip / 1_000_000,
+        fuelCost: toNumber(form?.fuelCost, 0) + totalFuelFromEquip / 1_000_000,
+        maintenanceCost: toNumber(form?.maintenanceCost, 0) + totalMaintFromEquip / 1_000_000,
         byProductRevenue: totalByProductRevenue / 1_000_000,
-        equipments,
-        personnels,
-        byProducts,
-        methodCosts,
+        equipments: equipments.map((e: any) => ({
+          ...e,
+          quantity: toNumber(e?.quantity, 1),
+          spareQuantity: toNumber(e?.spareQuantity, 0),
+          unitCost: toNumber(e?.unitCost, 0),
+          totalCost: toNumber(e?.totalCost, 0),
+          fuelConsumption: toNumber(e?.fuelConsumption, 0),
+          maintenanceCost: toNumber(e?.maintenanceCost, 0),
+          dailyWorkHours: toNumber(e?.dailyWorkHours, 8),
+          maintenancePeriodHours: toNumber(e?.maintenancePeriodHours, 500),
+          operatorCount: toNumber(e?.operatorCount, 1),
+          hourlyFuelConsumption: toNumber(e?.hourlyFuelConsumption, 0),
+          productionImpact: toNumber(e?.productionImpact, 0),
+          drillCapacity: toNumber(e?.drillCapacity, 0),
+          holeDiameter: toNumber(e?.holeDiameter, 0),
+          maxDrillDepth: toNumber(e?.maxDrillDepth, 0),
+          bucketVolume: toNumber(e?.bucketVolume, 0),
+          transportCapacity: toNumber(e?.transportCapacity, 0),
+          loadingCapacity: toNumber(e?.loadingCapacity, 0),
+          crushingCapacity: toNumber(e?.crushingCapacity, 0),
+        })),
+        personnels: personnels.map((p: any) => ({
+          ...p,
+          count: toNumber(p?.count, 1),
+          monthlySalary: toNumber(p?.monthlySalary, 0),
+          annualCost: toNumber(p?.annualCost, 0),
+        })),
+        byProducts: byProducts.map((b: any) => ({
+          ...b,
+          annualProduction: toNumber(b?.annualProduction, 0),
+          unitPrice: toNumber(b?.unitPrice, 0),
+          totalRevenue: toNumber(b?.totalRevenue, 0),
+        })),
+        methodCosts: methodCosts.map((c: any) => ({
+          ...c,
+          value: toNumber(c?.value, 0),
+        })),
       };
       const url = isEditing ? `/api/projects/${initialData?.id}` : '/api/projects';
       const method = isEditing ? 'PUT' : 'POST';
@@ -410,12 +483,12 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                         </div>
                         <div className="space-y-1">
                           <label className="text-xs text-muted-foreground">Adet</label>
-                          <input type="number" value={eq?.quantity ?? 1} onChange={(e) => updateEquipment(i, 'quantity', parseInt(e.target.value) || 1)}
+                          <input type="number" value={eq?.quantity ?? ''} onChange={(e) => updateEquipment(i, 'quantity', parseIntegerInput(e.target.value))}
                             className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                         </div>
                         <div className="space-y-1">
                           <label className="text-xs text-muted-foreground">Birim Fiyat (USD)</label>
-                          <input type="number" step="any" value={eq?.unitCost ?? 0} onChange={(e) => updateEquipment(i, 'unitCost', parseFloat(e.target.value) || 0)}
+                          <input type="number" step="any" value={eq?.unitCost ?? ''} onChange={(e) => updateEquipment(i, 'unitCost', parseNumericInput(e.target.value))}
                             className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                         </div>
                       </div>
@@ -432,14 +505,14 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                             <div className="space-y-1">
                               <label className="text-xs text-muted-foreground">Günlük Çalışma</label>
                               <div className="relative">
-                                <input type="number" step="any" value={eq?.dailyWorkHours ?? 8} onChange={(e) => updateEquipment(i, 'dailyWorkHours', parseFloat(e.target.value) || 0)}
+                                <input type="number" step="any" value={eq?.dailyWorkHours ?? ''} onChange={(e) => updateEquipment(i, 'dailyWorkHours', parseNumericInput(e.target.value))}
                                   className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">saat</span>
                               </div>
                             </div>
                             <div className="space-y-1">
                               <label className="text-xs text-muted-foreground">Operatör İhtiyacı</label>
-                              <input type="number" value={eq?.operatorCount ?? 1} onChange={(e) => updateEquipment(i, 'operatorCount', parseInt(e.target.value) || 1)}
+                              <input type="number" value={eq?.operatorCount ?? ''} onChange={(e) => updateEquipment(i, 'operatorCount', parseIntegerInput(e.target.value))}
                                 className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                             </div>
                             <div className="space-y-1">
@@ -453,7 +526,7 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                             <div className="space-y-1">
                               <label className="text-xs text-muted-foreground">Bakım Periyodu</label>
                               <div className="relative">
-                                <input type="number" value={eq?.maintenancePeriodHours ?? 500} onChange={(e) => updateEquipment(i, 'maintenancePeriodHours', parseInt(e.target.value) || 0)}
+                                <input type="number" value={eq?.maintenancePeriodHours ?? ''} onChange={(e) => updateEquipment(i, 'maintenancePeriodHours', parseIntegerInput(e.target.value))}
                                   className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">saat</span>
                               </div>
@@ -463,19 +536,19 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                             <div className="space-y-1">
                               <label className="text-xs text-muted-foreground">Saatlik Yakıt Tüketimi</label>
                               <div className="relative">
-                                <input type="number" step="any" value={eq?.hourlyFuelConsumption ?? 0} onChange={(e) => updateEquipment(i, 'hourlyFuelConsumption', parseFloat(e.target.value) || 0)}
+                                <input type="number" step="any" value={eq?.hourlyFuelConsumption ?? ''} onChange={(e) => updateEquipment(i, 'hourlyFuelConsumption', parseNumericInput(e.target.value))}
                                   className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">lt/sa</span>
                               </div>
                             </div>
                             <div className="space-y-1">
                               <label className="text-xs text-muted-foreground">Bakım Gideri (USD/yıl)</label>
-                              <input type="number" step="any" value={eq?.maintenanceCost ?? 0} onChange={(e) => updateEquipment(i, 'maintenanceCost', parseFloat(e.target.value) || 0)}
+                              <input type="number" step="any" value={eq?.maintenanceCost ?? ''} onChange={(e) => updateEquipment(i, 'maintenanceCost', parseNumericInput(e.target.value))}
                                 className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                             </div>
                             <div className="space-y-1">
                               <label className="text-xs text-muted-foreground">Yedek Adet</label>
-                              <input type="number" value={eq?.spareQuantity ?? 0} onChange={(e) => updateEquipment(i, 'spareQuantity', parseInt(e.target.value) || 0)}
+                              <input type="number" value={eq?.spareQuantity ?? ''} onChange={(e) => updateEquipment(i, 'spareQuantity', parseIntegerInput(e.target.value))}
                                 className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                             </div>
                             <div className="space-y-1">
@@ -499,7 +572,7 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                                         <input type="text" value={eq?.[f.key] ?? ''} onChange={(e) => updateEquipment(i, f.key, e.target.value)}
                                           className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="Örn: 4x4m" />
                                       ) : (
-                                        <input type="number" step="any" value={eq?.[f.key] ?? 0} onChange={(e) => updateEquipment(i, f.key, parseFloat(e.target.value) || 0)}
+                                        <input type="number" step="any" value={eq?.[f.key] ?? ''} onChange={(e) => updateEquipment(i, f.key, parseNumericInput(e.target.value))}
                                           className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                                       )}
                                       {f.suffix && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{f.suffix}</span>}
@@ -510,12 +583,12 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                             </>
                           )}
                           {/* Fuel calculation summary */}
-                          {(eq?.hourlyFuelConsumption ?? 0) > 0 && (form?.fuelPricePerLiter ?? 0) > 0 && (
+                          {(toNumber(eq?.hourlyFuelConsumption, 0) > 0) && (toNumber(form?.fuelPricePerLiter, 0) > 0) && (
                             <div className="p-2 rounded bg-amber-500/5 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-400">
                               <Fuel className="inline h-3 w-3 mr-1" />
-                              Günlük: {((eq?.hourlyFuelConsumption ?? 0) * (eq?.dailyWorkHours ?? 8) * (eq?.quantity ?? 1)).toFixed(0)} lt | 
-                              Aylık: {((eq?.hourlyFuelConsumption ?? 0) * (eq?.dailyWorkHours ?? 8) * (eq?.quantity ?? 1) * 30).toFixed(0)} lt | 
-                              Yıllık Maliyet: {((eq?.hourlyFuelConsumption ?? 0) * (eq?.dailyWorkHours ?? 8) * 365 * (eq?.quantity ?? 1) * (form?.fuelPricePerLiter ?? 0)).toLocaleString('tr-TR', {maximumFractionDigits: 0})} USD
+                              Günlük: {(toNumber(eq?.hourlyFuelConsumption, 0) * toNumber(eq?.dailyWorkHours, 8) * toNumber(eq?.quantity, 1)).toFixed(0)} lt | 
+                              Aylık: {(toNumber(eq?.hourlyFuelConsumption, 0) * toNumber(eq?.dailyWorkHours, 8) * toNumber(eq?.quantity, 1) * 30).toFixed(0)} lt | 
+                              Yıllık Maliyet: {(toNumber(eq?.hourlyFuelConsumption, 0) * toNumber(eq?.dailyWorkHours, 8) * 365 * toNumber(eq?.quantity, 1) * toNumber(form?.fuelPricePerLiter, 0)).toLocaleString('tr-TR', {maximumFractionDigits: 0})} USD
                             </div>
                           )}
                         </motion.div>
@@ -524,8 +597,8 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
 
                     {/* Footer summary */}
                     <div className="px-4 py-2 border-t border-border/20 flex justify-between items-center text-xs text-muted-foreground bg-card/30">
-                      <span>{eq?.machineType || 'Tanımsız'} • {eq?.quantity ?? 1} adet</span>
-                      <span className="font-mono font-medium text-foreground">{(((eq?.quantity ?? 1) + (eq?.spareQuantity ?? 0)) * (eq?.unitCost ?? 0)).toLocaleString('tr-TR')} USD</span>
+                      <span>{eq?.machineType || 'Tanımsız'} • {toNumber(eq?.quantity, 1)} adet</span>
+                      <span className="font-mono font-medium text-foreground">{((toNumber(eq?.quantity, 1) + toNumber(eq?.spareQuantity, 0)) * toNumber(eq?.unitCost, 0)).toLocaleString('tr-TR')} USD</span>
                     </div>
                   </div>
                 );
@@ -558,16 +631,16 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                   </div>
                   <div className="space-y-1 w-20">
                     <label className="text-xs text-muted-foreground">Kişi</label>
-                    <input type="number" value={p?.count ?? 1} onChange={(e) => updatePersonnel(i, 'count', parseInt(e.target.value) || 1)}
+                    <input type="number" value={p?.count ?? ''} onChange={(e) => updatePersonnel(i, 'count', parseIntegerInput(e.target.value))}
                       className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
                   <div className="space-y-1 w-36">
                     <label className="text-xs text-muted-foreground">Aylık Maaş (USD)</label>
-                    <input type="number" step="any" value={p?.monthlySalary ?? 0} onChange={(e) => updatePersonnel(i, 'monthlySalary', parseFloat(e.target.value) || 0)}
+                    <input type="number" step="any" value={p?.monthlySalary ?? ''} onChange={(e) => updatePersonnel(i, 'monthlySalary', parseNumericInput(e.target.value))}
                       className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
                   <div className="text-xs text-muted-foreground pb-1.5">
-                    Yıllık: <strong className="text-foreground font-mono">{((p?.count ?? 1) * (p?.monthlySalary ?? 0) * 12).toLocaleString('tr-TR')} USD</strong>
+                    Yıllık: <strong className="text-foreground font-mono">{(toNumber(p?.count, 1) * toNumber(p?.monthlySalary, 0) * 12).toLocaleString('tr-TR')} USD</strong>
                   </div>
                   <button type="button" onClick={() => removePersonnel(i)} className="text-muted-foreground hover:text-destructive pb-1.5">
                     <Trash2 className="h-3.5 w-3.5" />
@@ -660,8 +733,8 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                   </div>
                   <div className="space-y-1 w-36">
                     <label className="text-xs text-muted-foreground">Tutar (MUSD)</label>
-                    <input type="number" step="any" value={c?.value ?? 0}
-                      onChange={(e) => updateMethodCost(i, parseFloat(e.target.value) || 0)}
+                    <input type="number" step="any" value={c?.value ?? ''}
+                      onChange={(e) => updateMethodCost(i, parseNumericInput(e.target.value))}
                       className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
                   <button type="button" onClick={() => removeMethodCost(i)} className="text-muted-foreground hover:text-destructive pb-1.5">
@@ -718,16 +791,16 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                       </div>
                       <div className="space-y-1 w-32">
                         <label className="text-xs text-muted-foreground">Üretim (ton/yıl)</label>
-                        <input type="number" step="any" value={bp?.annualProduction ?? 0} onChange={(e) => updateByProduct(i, 'annualProduction', parseFloat(e.target.value) || 0)}
+                        <input type="number" step="any" value={bp?.annualProduction ?? ''} onChange={(e) => updateByProduct(i, 'annualProduction', parseNumericInput(e.target.value))}
                           className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                       </div>
                       <div className="space-y-1 w-32">
                         <label className="text-xs text-muted-foreground">Fiyat (USD/ton)</label>
-                        <input type="number" step="any" value={bp?.unitPrice ?? 0} onChange={(e) => updateByProduct(i, 'unitPrice', parseFloat(e.target.value) || 0)}
+                        <input type="number" step="any" value={bp?.unitPrice ?? ''} onChange={(e) => updateByProduct(i, 'unitPrice', parseNumericInput(e.target.value))}
                           className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                       </div>
                       <div className="text-xs text-muted-foreground pb-1.5">
-                        Gelir: <strong className="text-foreground font-mono">{((bp?.annualProduction ?? 0) * (bp?.unitPrice ?? 0)).toLocaleString('tr-TR')} USD/yıl</strong>
+                        Gelir: <strong className="text-foreground font-mono">{(toNumber(bp?.annualProduction, 0) * toNumber(bp?.unitPrice, 0)).toLocaleString('tr-TR')} USD/yıl</strong>
                       </div>
                       <button type="button" onClick={() => removeByProduct(i)} className="text-muted-foreground hover:text-destructive pb-1.5">
                         <Trash2 className="h-3.5 w-3.5" />
