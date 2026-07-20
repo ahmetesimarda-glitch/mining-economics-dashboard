@@ -88,7 +88,7 @@ export async function POST(
       },
     });
 
-    const otherProjects = allProjects.filter((p) => p.id !== project.id);
+    const otherProjects = allProjects.filter((p: any) => p.id !== project.id);
 
     // Compute sensitivity elasticities
     const projectParams = buildProjectParams(project);
@@ -126,7 +126,7 @@ export async function POST(
     };
 
     // Build benchmark data
-    const benchmarkData = otherProjects.map((p) => ({
+    const benchmarkData = otherProjects.map((p: any) => ({
       name: p.name,
       mineType: p.mineType,
       miningMethod: p.miningMethod,
@@ -205,7 +205,7 @@ ${personnelSummary.map((p: any) => `- ${p.role}: ${p.count} ki\u015fi, ayl\u0131
 ${elasticities.map((e) => `- ${e.parameter}: Etki=${e.impact} MUSD, -%10'da NPV=${e.npvAt10Down}, +%10'da NPV=${e.npvAt10Up}`).join('\n')}
 
 ## BENCHMARK: D\u0130\u011eER PROJELER\u0130N VER\u0130LER\u0130
-${benchmarkData.map((b) => `- ${b.name} (${b.mineType}, ${b.miningMethod}): NPV=${(b.npv ?? 0).toFixed(1)}, IRR=%${(b.irr ?? 0).toFixed(1)}, CAPEX=${(b.totalCapex ?? 0).toFixed(1)}, OPEX=${(b.totalOpex ?? 0).toFixed(1)}, \u00dcretim=${b.annualProduction} Mton, Fiyat=${b.unitPrice} USD/ton, Yak\u0131t=${(b.fuelCost ?? 0).toFixed(2)}, Personel=${(b.personnelCost ?? 0).toFixed(2)}, Bak\u0131m=${(b.maintenanceCost ?? 0).toFixed(2)}`).join('\n')}
+${benchmarkData.map((b: any) => `- ${b.name} (${b.mineType}, ${b.miningMethod}): NPV=${(b.npv ?? 0).toFixed(1)}, IRR=%${(b.irr ?? 0).toFixed(1)}, CAPEX=${(b.totalCapex ?? 0).toFixed(1)}, OPEX=${(b.totalOpex ?? 0).toFixed(1)}, \u00dcretim=${b.annualProduction} Mton, Fiyat=${b.unitPrice} USD/ton, Yak\u0131t=${(b.fuelCost ?? 0).toFixed(2)}, Personel=${(b.personnelCost ?? 0).toFixed(2)}, Bak\u0131m=${(b.maintenanceCost ?? 0).toFixed(2)}`).join('\n')}
 
 L\u00fctfen a\u015fa\u011f\u0131daki JSON format\u0131nda yan\u0131t ver. T\u00fcrk\u00e7e yaz. Markdown kullanma, d\u00fcz metin yaz.
 
