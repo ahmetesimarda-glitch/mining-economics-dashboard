@@ -1,9 +1,11 @@
 import fs from 'fs';
+import chromium from '@sparticuz/chromium';
 import puppeteer, { type Browser } from 'puppeteer-core';
 
 /**
  * Resolve a Chromium/Chrome binary for local HTML→PDF rendering.
- * Prefer explicit env overrides for Railway / Docker.
+ * Prefer explicit env overrides, then system Chrome (local/dev), then
+ * @sparticuz/chromium (Railway / container — no manual install required).
  */
 export function resolveChromeExecutable(): string | undefined {
   const fromEnv =
@@ -25,31 +27,34 @@ export function resolveChromeExecutable(): string | undefined {
   return undefined;
 }
 
+const LOCAL_LAUNCH_ARGS = [
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--disable-dev-shm-usage',
+  '--disable-gpu',
+  '--font-render-hinting=none',
+  '--hide-scrollbars',
+];
+
 /**
  * Render consulting-report HTML to a PDF buffer locally.
- * Uses Puppeteer + system Chrome/Chromium — more reliable on Railway than Playwright browsers.
+ * Uses Puppeteer + system Chrome when available; falls back to
+ * @sparticuz/chromium on Railway/Docker so no manual Chrome install is required.
  * Completely replaces Abacus HTML2PDF (no createConvertHtmlToPdfRequest / getConvertHtmlToPdfStatus).
  */
 export async function renderHtmlToPdf(html: string): Promise<Buffer> {
   let browser: Browser | null = null;
   try {
-    const executablePath = resolveChromeExecutable();
-    if (!executablePath) {
-      throw new Error(
-        'No Chrome/Chromium binary found. Set PUPPETEER_EXECUTABLE_PATH (or CHROME_PATH) for Railway/Docker.'
-      );
-    }
+    const systemPath = resolveChromeExecutable();
+    const executablePath = systemPath ?? (await chromium.executablePath());
+    const args = systemPath
+      ? LOCAL_LAUNCH_ARGS
+      : [...chromium.args, '--font-render-hinting=none', '--hide-scrollbars'];
+
     browser = await puppeteer.launch({
       executablePath,
       headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--font-render-hinting=none',
-        '--hide-scrollbars',
-      ],
+      args,
     });
     const page = await browser.newPage();
     await page.setContent(html, {

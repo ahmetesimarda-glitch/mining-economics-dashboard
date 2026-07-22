@@ -11,7 +11,7 @@ const nextConfig = {
   images: { unoptimized: true },
   // Keep headless Chrome + ExcelJS out of the client/server bundle graph.
   experimental: {
-    serverComponentsExternalPackages: ['puppeteer-core', 'exceljs'],
+    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium', 'exceljs'],
   },
 };
 
