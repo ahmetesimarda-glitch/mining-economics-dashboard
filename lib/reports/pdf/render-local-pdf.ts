@@ -1,11 +1,13 @@
 import fs from 'fs';
-import chromium from '@sparticuz/chromium';
 import puppeteer, { type Browser } from 'puppeteer-core';
 
 /**
  * Resolve a Chromium/Chrome binary for local HTML→PDF rendering.
- * Prefer explicit env overrides, then system Chrome (local/dev), then
- * @sparticuz/chromium (Railway / container — no manual install required).
+ * Railway/Docker: system Chromium (nixpacks apt package / image install).
+ * Local/dev: env override or installed Google Chrome / Chromium.
+ *
+ * Do NOT use @sparticuz/chromium here — that binary targets AWS Lambda
+ * and fails on Railway with missing shared libs (e.g. libnspr4.so).
  */
 export function resolveChromeExecutable(): string | undefined {
   const fromEnv =
@@ -15,11 +17,11 @@ export function resolveChromeExecutable(): string | undefined {
   if (fromEnv && fs.existsSync(fromEnv)) return fromEnv;
 
   const candidates = [
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
     '/usr/bin/google-chrome-stable',
     '/usr/bin/google-chrome',
     '/usr/local/bin/google-chrome',
-    '/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
   ];
   for (const path of candidates) {
     if (fs.existsSync(path)) return path;
@@ -27,7 +29,7 @@ export function resolveChromeExecutable(): string | undefined {
   return undefined;
 }
 
-const LOCAL_LAUNCH_ARGS = [
+const LAUNCH_ARGS = [
   '--no-sandbox',
   '--disable-setuid-sandbox',
   '--disable-dev-shm-usage',
@@ -38,23 +40,22 @@ const LOCAL_LAUNCH_ARGS = [
 
 /**
  * Render consulting-report HTML to a PDF buffer locally.
- * Uses Puppeteer + system Chrome when available; falls back to
- * @sparticuz/chromium on Railway/Docker so no manual Chrome install is required.
+ * Uses Puppeteer + system Chrome/Chromium (Railway-compatible).
  * Completely replaces Abacus HTML2PDF (no createConvertHtmlToPdfRequest / getConvertHtmlToPdfStatus).
  */
 export async function renderHtmlToPdf(html: string): Promise<Buffer> {
   let browser: Browser | null = null;
   try {
-    const systemPath = resolveChromeExecutable();
-    const executablePath = systemPath ?? (await chromium.executablePath());
-    const args = systemPath
-      ? LOCAL_LAUNCH_ARGS
-      : [...chromium.args, '--font-render-hinting=none', '--hide-scrollbars'];
-
+    const executablePath = resolveChromeExecutable();
+    if (!executablePath) {
+      throw new Error(
+        'No Chrome/Chromium binary found. On Railway, ensure Chromium is installed via nixpacks.toml (aptPkgs). Locally, install Chrome or set PUPPETEER_EXECUTABLE_PATH.'
+      );
+    }
     browser = await puppeteer.launch({
       executablePath,
       headless: true,
-      args,
+      args: LAUNCH_ARGS,
     });
     const page = await browser.newPage();
     await page.setContent(html, {
