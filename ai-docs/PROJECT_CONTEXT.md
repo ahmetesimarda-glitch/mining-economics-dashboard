@@ -126,7 +126,9 @@ Master Data UI/API live under `app/master-data/**` and `app/api/master-data/**`.
 11. **Market Data** (`app/market`, `/api/market`): live metal prices and FX rates with 5-minute caching.
 12. **AI Analysis** (`/api/projects/[id]/ai-analysis`, `ai-analysis-panel.tsx`): streaming LLM-generated narrative feasibility assessment.
 13. **Comparison** (`app/compare`): side-by-side comparison of multiple projects.
-14. **Exports**: **Excel** (`/api/projects/[id]/xlsx`) and **PDF** (`/api/projects/[id]/pdf`).
+14. **Exports**: **Excel** (`/api/projects/[id]/xlsx` via `lib/reports/excel/`) and **PDF** (`/api/projects/[id]/pdf` via `lib/reports/pdf/` + Abacus HTML2PDF).
+15. **Internal demo analytics**: `/internal/demo-analytics` (pre-auth visitor events).
+16. **Mining Market Insights**: placeholder news architecture on the dashboard (`lib/news/`).
 15. **Internationalization**: full TR/EN switching via `lib/i18n`.
 16. **Master Data — Equipment Catalog** (`/master-data/equipment`, `/api/master-data/equipment`): commercial CRUD catalog with OEM-aware search, manufacturer/category/active filters, table/card views, detail drawer, facets endpoint, and snapshot Add-to-Project into the fleet.
 17. **Public Demo Experience**: first-visit welcome dialog, always-available **Copper Mine Demo** (`demo-copper-mine`), Demo badge, and browser localStorage for welcome dismissal / last opened / visitor-created project ids (auth-free).
