@@ -28,7 +28,7 @@ Complexity is rated **S / M / L / XL**. Priority is **P0 (critical) → P3 (oppo
 - **Bilingual UI (TR/EN)** — `lib/i18n/translations.ts` + provider/hook.
 - **Theming (dark default)** — `next-themes`.
 - **Master Data — Equipment Catalog** — `EquipmentCatalogItem` + `/api/master-data/equipment` + `/master-data/equipment` UI; project form snapshots into `Equipment`.
-- **Public Demo Experience** — always-available Copper Mine Demo (`demo-copper-mine`), first-visit welcome dialog, Demo badge, localStorage for welcome/last-opened/created projects (auth-free).
+- **Public Demo Experience** — eight always-available commercial demos (`demo-*` ids across commodities/countries), portfolio gallery cards, first-visit welcome dialog, Demo badge, localStorage for welcome/last-opened/created projects (auth-free). Reusable seed architecture in `lib/demo/`.
 - **Internal demo analytics** — `/internal/demo-analytics`, `DemoAnalyticsEvent`, visitor UUID + funnel/timeline (`lib/analytics/`). Pre-auth precursor to Admin Dashboard.
 - **Project location search** — Nominatim proxy (`/api/location/search`), normalized City/State/Country strings, OSM map tiles (`ProjectMap`). GIS-ready; no form redesign.
 - **Mining Market Insights (architecture)** — `lib/news/` service + placeholder `NewsCard` section on dashboard. No live news/commodity/AI APIs yet.

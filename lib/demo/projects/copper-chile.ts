@@ -1,50 +1,16 @@
-import type { ProjectParams } from '@/lib/calculations';
-import { DEMO_PROJECT_ID } from './constants';
+import type { DemoProjectDefinition } from '../types';
+import { buildParams, equipmentRow, standardMineStaff } from '../helpers';
 
-/**
- * Complete Copper Mine Demo — a realistic open-pit copper feasibility study
- * so public visitors can explore every analysis module immediately.
- */
-export interface DemoProjectDefinition {
-  id: string;
-  name: string;
-  mineType: string;
-  miningMethod: string;
-  location: string;
-  currency: string;
-  exchangeRate: number;
-  fuelPricePerLiter: number;
-  electricityUnitPrice: number;
-  explosiveUnitPrice: number;
-  totalReserves: number;
-  maxAnnualCapacity: number;
-  oreGrade: number;
-  oreGradeUnit: string;
-  waterConsumptionDaily: number;
-  rehabilitationAreaHa: number;
-  rehabilitationCostPerHa: number;
-  loanAmount: number;
-  loanInterestRate: number;
-  loanTermYears: number;
-  equityRatio: number;
-  depreciationMethod: string;
-  equipmentRenewalEnabled: boolean;
-  equipmentRenewalCycleYears: number;
-  latitude: number;
-  longitude: number;
-  params: ProjectParams;
-  equipments: Record<string, unknown>[];
-  personnels: Record<string, unknown>[];
-  byProducts: Record<string, unknown>[];
-  methodCosts: Record<string, unknown>[];
-}
-
-export const COPPER_MINE_DEMO: DemoProjectDefinition = {
-  id: DEMO_PROJECT_ID,
-  name: 'Copper Mine Demo',
+/** Chile open-pit copper porphyry — mid-tier Andean operation. */
+export const COPPER_CHILE_DEMO: DemoProjectDefinition = {
+  id: 'demo-copper-mine',
+  name: 'Atacama Copper Project',
   mineType: 'copper',
   miningMethod: 'openPit',
-  location: 'Atacama Region, Chile (demo)',
+  location: 'Atacama Region, Chile',
+  country: 'Chile',
+  productionLabel: '85 ktpa Cu',
+  accent: 'copper',
   currency: 'USD',
   exchangeRate: 1.0,
   fuelPricePerLiter: 1.35,
@@ -54,6 +20,8 @@ export const COPPER_MINE_DEMO: DemoProjectDefinition = {
   maxAnnualCapacity: 6.0,
   oreGrade: 0.65,
   oreGradeUnit: '%',
+  strippingRatio: 2.8,
+  recoveryPercent: 88,
   waterConsumptionDaily: 2800,
   rehabilitationAreaHa: 420,
   rehabilitationCostPerHa: 18000,
@@ -66,7 +34,7 @@ export const COPPER_MINE_DEMO: DemoProjectDefinition = {
   equipmentRenewalCycleYears: 10,
   latitude: -22.9083,
   longitude: -69.1894,
-  params: {
+  params: buildParams({
     projectLifeYears: 25,
     discountRate: 8.0,
     taxRate: 25,
@@ -80,7 +48,6 @@ export const COPPER_MINE_DEMO: DemoProjectDefinition = {
     facilityCost: 320,
     infrastructureCost: 95,
     contingencyRate: 12,
-    totalCapex: 672.0,
     fuelCost: 18.5,
     personnelCost: 22.0,
     maintenanceCost: 14.5,
@@ -88,7 +55,6 @@ export const COPPER_MINE_DEMO: DemoProjectDefinition = {
     tireCost: 3.5,
     strippingCost: 28.0,
     otherOpex: 6.5,
-    totalOpex: 101.2,
     forestCost: 2.5,
     landCost: 4.0,
     rehabilitationCost: 12.0,
@@ -110,9 +76,9 @@ export const COPPER_MINE_DEMO: DemoProjectDefinition = {
     loanInterestRate: 6.5,
     loanTermYears: 12,
     equityRatio: 45,
-  },
+  }),
   equipments: [
-    {
+    equipmentRow({
       machineType: 'Caterpillar 793F Haul Truck',
       equipmentCategory: 'truck',
       model: '793F',
@@ -120,37 +86,31 @@ export const COPPER_MINE_DEMO: DemoProjectDefinition = {
       quantity: 14,
       spareQuantity: 2,
       unitCost: 3_800_000,
-      totalCost: 60_800_000,
       dailyWorkHours: 20,
-      maintenancePeriodHours: 500,
       operatorCount: 1,
-      powerType: 'diesel',
       hourlyFuelConsumption: 75,
-      maintenanceCost: 95_000,
       fuelConsumption: 75,
+      maintenanceCost: 95_000,
       productionImpact: 500,
       transportCapacity: 227,
-    },
-    {
+    }),
+    equipmentRow({
       machineType: 'Liebherr R 9800 Excavator',
       equipmentCategory: 'excavator',
       model: 'R 9800',
       tonnageCapacity: '800 ton class',
       quantity: 2,
-      spareQuantity: 0,
       unitCost: 12_000_000,
-      totalCost: 24_000_000,
       dailyWorkHours: 20,
       maintenancePeriodHours: 400,
       operatorCount: 2,
-      powerType: 'diesel',
       hourlyFuelConsumption: 160,
-      maintenanceCost: 280_000,
       fuelConsumption: 160,
+      maintenanceCost: 280_000,
       productionImpact: 900,
       bucketVolume: 42,
-    },
-    {
+    }),
+    equipmentRow({
       machineType: 'Komatsu PC2000-11 Excavator',
       equipmentCategory: 'excavator',
       model: 'PC2000-11',
@@ -158,38 +118,28 @@ export const COPPER_MINE_DEMO: DemoProjectDefinition = {
       quantity: 3,
       spareQuantity: 1,
       unitCost: 2_800_000,
-      totalCost: 11_200_000,
       dailyWorkHours: 18,
-      maintenancePeriodHours: 500,
-      operatorCount: 1,
-      powerType: 'diesel',
       hourlyFuelConsumption: 85,
-      maintenanceCost: 72_000,
       fuelConsumption: 85,
+      maintenanceCost: 72_000,
       productionImpact: 450,
       bucketVolume: 12,
-    },
-    {
+    }),
+    equipmentRow({
       machineType: 'Caterpillar 994K Wheel Loader',
       equipmentCategory: 'loader',
       model: '994K',
       tonnageCapacity: '56 ton',
       quantity: 2,
-      spareQuantity: 0,
       unitCost: 2_900_000,
-      totalCost: 5_800_000,
-      dailyWorkHours: 16,
-      maintenancePeriodHours: 500,
-      operatorCount: 1,
-      powerType: 'diesel',
       hourlyFuelConsumption: 55,
-      maintenanceCost: 68_000,
       fuelConsumption: 55,
+      maintenanceCost: 68_000,
       productionImpact: 420,
       loadingCapacity: 420,
       bucketVolume: 14,
-    },
-    {
+    }),
+    equipmentRow({
       machineType: 'Caterpillar D11 Dozer',
       equipmentCategory: 'dozer',
       model: 'D11',
@@ -197,72 +147,47 @@ export const COPPER_MINE_DEMO: DemoProjectDefinition = {
       quantity: 3,
       spareQuantity: 1,
       unitCost: 1_850_000,
-      totalCost: 7_400_000,
-      dailyWorkHours: 16,
-      maintenancePeriodHours: 500,
-      operatorCount: 1,
-      powerType: 'diesel',
       hourlyFuelConsumption: 62,
-      maintenanceCost: 55_000,
       fuelConsumption: 62,
-      productionImpact: 0,
-    },
-    {
+      maintenanceCost: 55_000,
+    }),
+    equipmentRow({
       machineType: 'Epiroc Pit Viper 271 Drill',
       equipmentCategory: 'drill',
       model: 'Pit Viper 271',
-      tonnageCapacity: '',
       quantity: 3,
       spareQuantity: 1,
       unitCost: 2_200_000,
-      totalCost: 8_800_000,
-      dailyWorkHours: 16,
       maintenancePeriodHours: 400,
-      operatorCount: 1,
-      powerType: 'diesel',
       hourlyFuelConsumption: 48,
-      maintenanceCost: 62_000,
       fuelConsumption: 48,
+      maintenanceCost: 62_000,
       productionImpact: 28,
       drillCapacity: 28,
       holeDiameter: 270,
       maxDrillDepth: 60,
-    },
-    {
-      machineType: 'Metso Primary Crusher',
+    }),
+    equipmentRow({
+      machineType: 'Metso Nordberg C160 Jaw Crusher',
       equipmentCategory: 'crusher',
       model: 'C160',
       tonnageCapacity: '1200 tph',
       quantity: 1,
-      spareQuantity: 0,
       unitCost: 4_500_000,
-      totalCost: 4_500_000,
       dailyWorkHours: 22,
       maintenancePeriodHours: 600,
       operatorCount: 2,
       powerType: 'electric',
-      hourlyFuelConsumption: 0,
       maintenanceCost: 85_000,
-      fuelConsumption: 0,
       productionImpact: 900,
       crushingCapacity: 900,
-    },
+    }),
   ],
   personnels: [
-    { role: 'Mine Manager', count: 1, monthlySalary: 12_000 },
-    { role: 'Mining Engineer', count: 4, monthlySalary: 6_500 },
-    { role: 'Geologist', count: 3, monthlySalary: 5_800 },
-    { role: 'Metallurgist', count: 2, monthlySalary: 6_200 },
-    { role: 'Environmental Engineer', count: 2, monthlySalary: 5_500 },
-    { role: 'Shift Supervisor', count: 6, monthlySalary: 4_200 },
+    ...standardMineStaff('large'),
     { role: 'Haul Truck Operator', count: 28, monthlySalary: 3_400 },
     { role: 'Excavator Operator', count: 10, monthlySalary: 3_600 },
     { role: 'Drill Operator', count: 6, monthlySalary: 3_500 },
-    { role: 'Maintenance Technician', count: 16, monthlySalary: 3_800 },
-    { role: 'Plant Operator', count: 12, monthlySalary: 3_200 },
-    { role: 'Electrician', count: 6, monthlySalary: 3_600 },
-    { role: 'Safety / Rescue', count: 8, monthlySalary: 3_000 },
-    { role: 'Admin / HR', count: 6, monthlySalary: 2_800 },
   ],
   byProducts: [
     {

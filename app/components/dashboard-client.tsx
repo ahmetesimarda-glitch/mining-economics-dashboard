@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from './header';
 import { ProjectCard } from './project-card';
@@ -11,17 +11,19 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n/context';
 import { WelcomeDialog } from '@/components/demo/WelcomeDialog';
+import { DemoPortfolio } from '@/components/demo/DemoPortfolio';
 import { MiningMarketInsights } from '@/app/components/news/mining-market-insights';
 import {
   DEMO_PROJECT_ID,
   dismissWelcomePermanently,
   filterDemoWorkspaceProjects,
+  isDemoProjectId,
   isWelcomeDismissed,
-  setLastOpenedProjectId,
   untrackCreatedProjectId,
 } from '@/lib/demo';
 import { bootstrapAnalyticsSession } from '@/lib/analytics';
 import { toast } from 'sonner';
+import type { DemoEconomics } from '@/components/demo/DemoProjectCard';
 
 interface DashboardProject {
   id: string;
@@ -41,7 +43,6 @@ export function DashboardClient() {
 
   const fetchProjects = async () => {
     try {
-      // Ensure demo exists before listing (idempotent).
       await fetch('/api/demo/ensure');
       const res = await fetch('/api/projects');
       const data = (await res?.json()) as DashboardProject[] | null;
@@ -57,7 +58,6 @@ export function DashboardClient() {
 
   useEffect(() => {
     void fetchProjects();
-    // First-visit welcome — only after mount to avoid hydration mismatch.
     if (!isWelcomeDismissed()) {
       setWelcomeOpen(true);
     }
@@ -80,6 +80,19 @@ export function DashboardClient() {
   };
 
   const visible = projects ?? [];
+  const userProjects = visible.filter((p) => !isDemoProjectId(p?.id));
+  const demoProjects = visible.filter((p) => isDemoProjectId(p?.id));
+
+  const economicsById = useMemo(() => {
+    const map: Record<string, DemoEconomics> = {};
+    for (const p of demoProjects) {
+      if (p?.id) {
+        map[p.id] = { npv: p.npv, irr: p.irr };
+      }
+    }
+    return map;
+  }, [demoProjects]);
+
   const totalProjects = visible.length;
   const avgNpv =
     totalProjects > 0
@@ -99,8 +112,15 @@ export function DashboardClient() {
   const exploreDemo = () => {
     dismissWelcomePermanently();
     setWelcomeOpen(false);
-    setLastOpenedProjectId(DEMO_PROJECT_ID);
-    router.push(`/projects/${DEMO_PROJECT_ID}`);
+    // Prefer scrolling to the portfolio; fall back to flagship copper.
+    requestAnimationFrame(() => {
+      const el = document.getElementById('demo-portfolio');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        router.push(`/projects/${DEMO_PROJECT_ID}`);
+      }
+    });
   };
 
   const createNew = () => {
@@ -156,11 +176,19 @@ export function DashboardClient() {
           />
         </div>
 
+        {loading ? (
+          <div className="flex items-center justify-center py-12 mb-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <DemoPortfolio economicsById={economicsById} />
+        )}
+
         <MiningMarketInsights />
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-xl font-semibold tracking-tight">
-            {t('dash.projects')}
+            {t('dash.yourProjects')}
           </h2>
           <Link
             href="/projects/new"
@@ -175,16 +203,18 @@ export function DashboardClient() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : totalProjects === 0 ? (
+        ) : userProjects.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-20 rounded-xl bg-card border border-border/50"
+            className="flex flex-col items-center justify-center py-16 rounded-xl bg-card border border-border/50"
             style={{ boxShadow: 'var(--shadow-sm)' }}
           >
-            <Mountain className="h-16 w-16 text-muted-foreground/30 mb-4" />
+            <Mountain className="h-14 w-14 text-muted-foreground/30 mb-4" />
             <h3 className="font-display text-lg font-semibold mb-2">{t('dash.noProjects')}</h3>
-            <p className="text-muted-foreground text-sm mb-4">{t('dash.noProjectsDesc')}</p>
+            <p className="text-muted-foreground text-sm mb-4 text-center max-w-md px-4">
+              {t('dash.noProjectsDesc')}
+            </p>
             <div className="flex flex-wrap gap-2 justify-center">
               <button
                 type="button"
@@ -204,7 +234,7 @@ export function DashboardClient() {
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {visible.map((project, i) => (
+            {userProjects.map((project, i) => (
               <ProjectCard
                 key={project?.id ?? i}
                 project={project}

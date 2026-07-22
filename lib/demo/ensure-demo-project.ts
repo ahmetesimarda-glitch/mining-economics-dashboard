@@ -1,17 +1,9 @@
 import type { PrismaClient } from '@prisma/client';
 import { performFullAnalysis } from '@/lib/calculations';
-import { COPPER_MINE_DEMO } from './copper-mine-demo';
-import { DEMO_PROJECT_ID } from './constants';
+import { DEMO_PROJECTS, getDemoProjectById } from './catalog';
+import type { DemoProjectDefinition } from './types';
 
-/**
- * Idempotent ensure for the public Copper Mine Demo.
- * Creates the full project (with children) if missing.
- * If present, updates scalars / cached results only — never deletes children.
- */
-export async function ensureCopperMineDemo(
-  prisma: PrismaClient
-): Promise<{ id: string; created: boolean }> {
-  const demo = COPPER_MINE_DEMO;
+function buildScalarData(demo: DemoProjectDefinition) {
   const analysis = performFullAnalysis(demo.params);
   const cashFlowData = (analysis?.cashFlows ?? []).map((cf) => ({
     year: cf?.year ?? 0,
@@ -96,22 +88,35 @@ export async function ensureCopperMineDemo(
     customCashFlows: false,
   };
 
+  return { scalarData, cashFlowData, analysis };
+}
+
+/**
+ * Idempotent ensure for one demo definition.
+ * Creates with nested children if missing; updates scalars only if present.
+ */
+export async function ensureDemoProject(
+  prisma: PrismaClient,
+  demo: DemoProjectDefinition
+): Promise<{ id: string; created: boolean }> {
+  const { scalarData, cashFlowData } = buildScalarData(demo);
+
   const existing = await prisma.miningProject.findUnique({
-    where: { id: DEMO_PROJECT_ID },
+    where: { id: demo.id },
     select: { id: true },
   });
 
   if (existing) {
     await prisma.miningProject.update({
-      where: { id: DEMO_PROJECT_ID },
+      where: { id: demo.id },
       data: scalarData,
     });
-    return { id: DEMO_PROJECT_ID, created: false };
+    return { id: demo.id, created: false };
   }
 
   await prisma.miningProject.create({
     data: {
-      id: DEMO_PROJECT_ID,
+      id: demo.id,
       ...scalarData,
       cashFlows: { create: cashFlowData },
       equipments: {
@@ -175,5 +180,25 @@ export async function ensureCopperMineDemo(
     },
   });
 
-  return { id: DEMO_PROJECT_ID, created: true };
+  return { id: demo.id, created: true };
+}
+
+/** Ensure every registered demo project exists (idempotent). */
+export async function ensureAllDemoProjects(
+  prisma: PrismaClient
+): Promise<{ id: string; created: boolean }[]> {
+  const results: { id: string; created: boolean }[] = [];
+  for (const demo of DEMO_PROJECTS) {
+    results.push(await ensureDemoProject(prisma, demo));
+  }
+  return results;
+}
+
+/** @deprecated Use ensureDemoProject / ensureAllDemoProjects. */
+export async function ensureCopperMineDemo(
+  prisma: PrismaClient
+): Promise<{ id: string; created: boolean }> {
+  const copper = getDemoProjectById('demo-copper-mine');
+  if (!copper) throw new Error('Copper demo definition missing from catalog');
+  return ensureDemoProject(prisma, copper);
 }

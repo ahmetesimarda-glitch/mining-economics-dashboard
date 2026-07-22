@@ -1,4 +1,4 @@
-import { DEMO_PROJECT_ID, DEMO_STORAGE_KEYS } from './constants';
+import { DEMO_PROJECT_ID, DEMO_PROJECT_IDS, DEMO_STORAGE_KEYS, isDemoProjectId } from './constants';
 
 function canUseStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -38,7 +38,7 @@ export function getCreatedProjectIds(): string[] {
 }
 
 export function trackCreatedProjectId(id: string): void {
-  if (!canUseStorage() || !id || id === DEMO_PROJECT_ID) return;
+  if (!canUseStorage() || !id || isDemoProjectId(id)) return;
   const existing = getCreatedProjectIds();
   if (existing.includes(id)) return;
   window.localStorage.setItem(
@@ -55,21 +55,34 @@ export function untrackCreatedProjectId(id: string): void {
 
 /**
  * Public demo workspace visibility:
- * always include the Copper Mine Demo, plus projects this browser created.
+ * always include every registered demo project, plus projects this browser created.
+ * Demo projects are pinned first (catalog order).
  */
 export function filterDemoWorkspaceProjects<T extends { id?: string | null }>(
   projects: T[]
 ): T[] {
   const created = new Set(getCreatedProjectIds());
+  const demoOrder = new Map(
+    (DEMO_PROJECT_IDS as readonly string[]).map((id, index) => [id, index])
+  );
+
   const visible = projects.filter((p) => {
     const id = p?.id ?? '';
-    return id === DEMO_PROJECT_ID || created.has(id);
+    return isDemoProjectId(id) || created.has(id);
   });
 
-  // Pin demo first when present.
   return visible.sort((a, b) => {
-    if (a?.id === DEMO_PROJECT_ID) return -1;
-    if (b?.id === DEMO_PROJECT_ID) return 1;
+    const aId = a?.id ?? '';
+    const bId = b?.id ?? '';
+    const aDemo = demoOrder.has(aId);
+    const bDemo = demoOrder.has(bId);
+    if (aDemo && bDemo) {
+      return (demoOrder.get(aId) ?? 0) - (demoOrder.get(bId) ?? 0);
+    }
+    if (aDemo) return -1;
+    if (bDemo) return 1;
     return 0;
   });
 }
+
+export { DEMO_PROJECT_ID };

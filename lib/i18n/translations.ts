@@ -170,9 +170,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     'dash.avgIrr': 'Ortalama IRR',
     'dash.totalCapex': 'Toplam CAPEX',
     'dash.projects': 'Projeler',
+    'dash.yourProjects': 'Projeleriniz',
     'dash.newProject': 'Yeni Proje',
-    'dash.noProjects': 'Henüz proje yok',
-    'dash.noProjectsDesc': 'İlk maden projenizi ekleyerek ekonomik analize başlayın.',
+    'dash.noProjects': 'Henüz kendi projeniz yok',
+    'dash.noProjectsDesc': 'Demo portföyünü inceleyin veya sıfırdan kendi maden projenizi oluşturun.',
     'dash.createProject': 'Proje Oluştur',
     'dash.loadError': 'Projeler yüklenemedi',
     'news.sectionTitle': 'Mining Market Insights',
@@ -183,11 +184,19 @@ export const translations: Record<Locale, Record<string, string>> = {
     // === DEMO EXPERIENCE ===
     'demo.badge': 'Demo Proje',
     'demo.welcomeTitle': 'Mining Economics Dashboard’a Hoş Geldiniz',
-    'demo.welcomeBody': 'Eksiksiz bir maden fizibilite projesini keşfedin veya sıfırdan kendi projenizi oluşturun.',
-    'demo.exploreDemo': 'Demoyu Keşfet',
+    'demo.welcomeBody':
+      'Sekiz gerçekçi maden fizibilite demosunu (bakır, altın, demir, lityum, nikel, kömür, çinko, nadir toprak) keşfedin veya kendi projenizi oluşturun.',
+    'demo.exploreDemo': 'Demo Portföyünü Gör',
     'demo.createNew': 'Yeni Proje Oluştur',
     'demo.dismiss': 'Bir daha gösterme',
     'demo.cannotDelete': 'Demo proje silinemez',
+    'demo.portfolioEyebrow': 'Ticari Demo Portföyü',
+    'demo.portfolioTitle': 'Demo Projeler',
+    'demo.portfolioSubtitle':
+      'Farklı emtia, ülke ve işletme yöntemleriyle hazırlanmış danışmanlık kalitesinde fizibilite demoları. PDF ve Excel her proje için ayrı üretilir.',
+    'demo.annualProduction': 'Yıllık üretim',
+    'demo.mineLife': 'İşletme ömrü',
+    'demo.years': 'yıl',
 
     // === PROJECT CARD ===
     'card.project': 'Proje',
@@ -633,6 +642,9 @@ export const translations: Record<Locale, Record<string, string>> = {
     'mine.boron': 'Bor',
     'mine.silver': 'Gümüş',
     'mine.zinc': 'Çinko',
+    'mine.lithium': 'Lityum',
+    'mine.nickel': 'Nikel',
+    'mine.rareEarth': 'Nadir Toprak',
     'mine.other': 'Diğer',
 
     // === MINING METHODS ===
@@ -846,9 +858,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     'dash.avgIrr': 'Average IRR',
     'dash.totalCapex': 'Total CAPEX',
     'dash.projects': 'Projects',
+    'dash.yourProjects': 'Your Projects',
     'dash.newProject': 'New Project',
-    'dash.noProjects': 'No projects yet',
-    'dash.noProjectsDesc': 'Start your economic analysis by creating your first mining project.',
+    'dash.noProjects': 'No projects of your own yet',
+    'dash.noProjectsDesc': 'Browse the demo portfolio, or create your own mining project from scratch.',
     'dash.createProject': 'Create Project',
     'dash.loadError': 'Failed to load projects',
     'news.sectionTitle': 'Mining Market Insights',
@@ -859,11 +872,19 @@ export const translations: Record<Locale, Record<string, string>> = {
     // === DEMO EXPERIENCE ===
     'demo.badge': 'Demo Project',
     'demo.welcomeTitle': 'Welcome to Mining Economics Dashboard',
-    'demo.welcomeBody': 'Explore a complete mining feasibility project, or create your own project from scratch.',
-    'demo.exploreDemo': 'Explore Demo',
+    'demo.welcomeBody':
+      'Explore eight realistic mining feasibility demos (copper, gold, iron, lithium, nickel, coal, zinc, rare earth), or create your own project.',
+    'demo.exploreDemo': 'Browse Demo Portfolio',
     'demo.createNew': 'Create New Project',
     'demo.dismiss': 'Don’t show again',
     'demo.cannotDelete': 'The demo project cannot be deleted',
+    'demo.portfolioEyebrow': 'Commercial Demo Portfolio',
+    'demo.portfolioTitle': 'Demo Projects',
+    'demo.portfolioSubtitle':
+      'Consulting-grade feasibility demos across commodities, countries, and mine types. Each project generates its own PDF and Excel workbook.',
+    'demo.annualProduction': 'Annual production',
+    'demo.mineLife': 'Mine life',
+    'demo.years': 'years',
 
     // === PROJECT CARD ===
     'card.project': 'Project',
@@ -1309,6 +1330,9 @@ export const translations: Record<Locale, Record<string, string>> = {
     'mine.boron': 'Boron',
     'mine.silver': 'Silver',
     'mine.zinc': 'Zinc',
+    'mine.lithium': 'Lithium',
+    'mine.nickel': 'Nickel',
+    'mine.rareEarth': 'Rare Earth',
     'mine.other': 'Other',
 
     // === MINING METHODS ===

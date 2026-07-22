@@ -39,6 +39,9 @@ export const MINE_TYPES = [
   { value: 'boron', label: 'Bor' },
   { value: 'silver', label: 'Gümüş' },
   { value: 'zinc', label: 'Çinko' },
+  { value: 'lithium', label: 'Lityum' },
+  { value: 'nickel', label: 'Nikel' },
+  { value: 'rareEarth', label: 'Nadir Toprak' },
   { value: 'other', label: 'Diğer' },
 ];
 

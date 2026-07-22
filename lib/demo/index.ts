@@ -1,4 +1,10 @@
-export { DEMO_PROJECT_ID, DEMO_STORAGE_KEYS, isDemoProjectId } from './constants';
+export {
+  DEMO_PROJECT_ID,
+  DEMO_PROJECT_IDS,
+  DEMO_STORAGE_KEYS,
+  isDemoProjectId,
+  type DemoProjectId,
+} from './constants';
 export {
   isWelcomeDismissed,
   dismissWelcomePermanently,
@@ -9,5 +15,14 @@ export {
   untrackCreatedProjectId,
   filterDemoWorkspaceProjects,
 } from './storage';
-export { COPPER_MINE_DEMO, type DemoProjectDefinition } from './copper-mine-demo';
-export { ensureCopperMineDemo } from './ensure-demo-project';
+export type { DemoProjectDefinition, DemoAccent } from './types';
+export {
+  DEMO_PROJECTS,
+  getDemoProjectById,
+  COPPER_MINE_DEMO,
+} from './catalog';
+export {
+  ensureDemoProject,
+  ensureAllDemoProjects,
+  ensureCopperMineDemo,
+} from './ensure-demo-project';

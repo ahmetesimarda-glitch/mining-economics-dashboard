@@ -2,17 +2,17 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { ensureCopperMineDemo, DEMO_PROJECT_ID } from '@/lib/demo';
+import { DEMO_PROJECT_IDS, ensureAllDemoProjects } from '@/lib/demo';
 
 /**
  * GET /api/demo/ensure
- * Ensures the Copper Mine Demo project exists (idempotent, no deletes).
+ * Ensures every registered demo project exists (idempotent, no deletes).
  */
 export async function GET() {
   try {
-    const result = await ensureCopperMineDemo(prisma);
-    const project = await prisma.miningProject.findUnique({
-      where: { id: DEMO_PROJECT_ID },
+    const results = await ensureAllDemoProjects(prisma);
+    const projects = await prisma.miningProject.findMany({
+      where: { id: { in: [...DEMO_PROJECT_IDS] } },
       include: {
         cashFlows: { orderBy: { year: 'asc' } },
         equipments: true,
@@ -22,14 +22,22 @@ export async function GET() {
       },
     });
 
+    const order = new Map(
+      (DEMO_PROJECT_IDS as readonly string[]).map((id, index) => [id, index])
+    );
+    projects.sort(
+      (a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999)
+    );
+
     return NextResponse.json({
-      id: result.id,
-      created: result.created,
-      project,
+      results,
+      count: results.length,
+      created: results.filter((r) => r.created).length,
+      projects,
     });
   } catch (error: unknown) {
     console.error('Demo ensure error:', error);
-    const message = error instanceof Error ? error.message : 'Demo project could not be prepared';
+    const message = error instanceof Error ? error.message : 'Demo projects could not be prepared';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
