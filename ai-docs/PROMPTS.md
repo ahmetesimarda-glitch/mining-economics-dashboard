@@ -207,7 +207,7 @@
 >
 > **Task:** `{{PDF CHANGE}}` in `app/api/projects/[id]/pdf/route.ts`.
 >
-> Preserve the Abacus HTML2PDF flow: POST to `createConvertHtmlToPdfRequest` → poll `getConvertHtmlToPdfStatus` for `SUCCESS`/`FAILED`/timeout → decode base64 to a Buffer. Do not attempt local headless rendering (unavailable in production). Use absolute/public asset URLs or the runtime base URL for images. Keep report numbers sourced from the engine/stored results — no recomputation drift. Localize report text (TR+EN). End with the changed-files explanation.
+> Preserve local PDF rendering via `puppeteer-core` + system Chrome/Chromium (`lib/reports/pdf/render-local-pdf.ts`). Do not reintroduce Abacus HTML2PDF (`createConvertHtmlToPdfRequest` / `getConvertHtmlToPdfStatus`). Keep the consulting HTML layout in `build-consulting-report.ts`. Keep report numbers sourced from the engine/stored results — no recomputation drift. Localize report text (TR+EN). End with the changed-files explanation.
 
 ## 23. Excel Improvements
 
@@ -215,7 +215,7 @@
 >
 > **Task:** `{{EXCEL CHANGE}}` in `app/api/projects/[id]/xlsx/route.ts`.
 >
-> Use the installed `xlsx` (SheetJS). Source all values from stored project data and engine results — do not re-derive financials in the export. Keep column semantics and units consistent with the on-screen values and `BUSINESS_RULES.md` (MUSD scaling). Preserve the existing sheet structure unless I ask to change it. End with the changed-files explanation.
+> Use ExcelJS (`lib/reports/excel/`). Source all values from stored project data and engine results — do not re-derive financials in the export. Keep column semantics and units consistent with the on-screen values and `BUSINESS_RULES.md` (MUSD scaling). Preserve professional formatting (borders, formulas, freeze panes, print setup). Mark missing engineering detail as placeholders — never invent values. End with the changed-files explanation.
 
 ## 24. Database Optimization
 

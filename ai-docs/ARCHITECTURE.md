@@ -12,7 +12,7 @@ The application is a single **Next.js 14 (App Router)** full-stack web applicati
 - **Next.js Route Handlers** (`app/api/**/route.ts`) as the backend API layer — there is no separate server process.
 - **Prisma 6.7 + PostgreSQL** for persistence.
 - **A pure TypeScript calculation engine** (`lib/calculations.ts`) that contains all economic modeling and is completely decoupled from HTTP and the database.
-- **External Abacus.AI HTTP APIs** for two features only: streaming AI narrative analysis (chat completions) and HTML-to-PDF export. No other third-party runtime services are required.
+- **External Abacus.AI HTTP APIs** for streaming AI narrative analysis only. PDF export is rendered locally with Puppeteer. No other third-party runtime services are required for core economics.
 
 The result is a self-contained deployable unit: a container that serves both the rendered frontend and the JSON/streaming API from one Node process, talking to one PostgreSQL database.
 
@@ -20,7 +20,7 @@ The result is a self-contained deployable unit: a container that serves both the
 Browser (React client components, charts, maps)
         │  fetch / EventSource
         ▼
-Next.js Route Handlers  (app/api/**/route.ts)   ───▶  Abacus.AI APIs (AI analysis, HTML→PDF)
+Next.js Route Handlers  (app/api/**/route.ts)   ───▶  Abacus.AI (AI analysis) · Local Puppeteer (PDF)
         │                                                (outbound HTTPS only)
         ├──▶  Calculation engine (lib/calculations.ts, pure TS)
         └──▶  Prisma singleton (lib/prisma.ts)  ───▶  PostgreSQL
@@ -101,8 +101,8 @@ The economic semantics (Year-0 outflow, royalty basis, tax gating, discounting, 
 
 ## 8. Export Subsystem (PDF & Spreadsheet)
 
-- **PDF:** `lib/reports/pdf/` builds a consulting-grade HTML report (cover, TOC, executive summary, project info, economics, equipment, financials, sensitivity, Monte Carlo, conclusion, disclaimer). `app/api/projects/[id]/pdf/route.ts` orchestrates analysis via the existing engine (`performFullAnalysis`, `sensitivityAnalysis`, `runMonteCarloSimulation`) and calls the Abacus.AI HTML-to-PDF service: POST `createConvertHtmlToPdfRequest` → poll `getConvertHtmlToPdfStatus` → decode base64 `result` to a Buffer. No local headless browser.
-- **Spreadsheet:** `lib/reports/excel/` builds a multi-sheet workbook (Summary, Project Information, Economics, Cash Flow, Equipment, Sensitivity, Monte Carlo, Charts data). Served by `app/api/projects/[id]/xlsx/route.ts` via SheetJS (`xlsx`). Community SheetJS does not embed chart objects; the Charts sheet holds series data for external charting.
+- **PDF:** `lib/reports/pdf/` builds a consulting-grade HTML report (cover, TOC, executive summary, project overview, assumptions, economics, equipment, CAPEX/OPEX, production/revenue, cash flow, NPV/IRR/payback/breakeven, sensitivity, Monte Carlo, tornado, financial SVG charts, risk assessment, conclusions, recommendations, disclaimer). `app/api/projects/[id]/pdf/route.ts` orchestrates analysis via the existing engine (`performFullAnalysis`, `sensitivityAnalysis`, `runMonteCarloSimulation`, tornado helper, `generateRiskMatrix`) and renders PDF **locally** with `puppeteer-core` + system Chrome/Chromium (`renderHtmlToPdf`). No Abacus HTML2PDF dependency.
+- **Spreadsheet:** `lib/reports/excel/` builds a multi-sheet engineering workbook (Navigation, Project Summary, Economic Inputs, Discount Rate, Commodity Prices, Equipment Investment, Initial Investment, Depreciation, Tire/Fuel/Personnel costs, Government & Forestry, Production, Operating Costs, Revenue, Cash Flow, NPV, IRR, Break-even, Sensitivity, Monte Carlo, Tornado). Served by `app/api/projects/[id]/xlsx/route.ts` via **ExcelJS** (borders, merges, formulas, number formats, freeze panes, print setup, headers/footers). Missing engineering detail is exported as explicit placeholders — never invented.
 - **Numbers:** export builders must call the engine / stored results — never re-implement formulas.
 
 ---
@@ -149,7 +149,7 @@ The repository supports two build targets:
 - **Abacus / preview build (`next.config.js`):** `distDir` from `NEXT_DIST_DIR`, `output` from `NEXT_OUTPUT_MODE` (standalone in the managed pipeline), `images.unoptimized: true`, `eslint.ignoreDuringBuilds: true`, `typescript.ignoreBuildErrors: false`, custom webpack chunk filenames, and `experimental.outputFileTracingRoot` for the standalone trace.
 - **Self-host / GitHub build (`next.config.github.js`):** `output: 'standalone'`, unoptimized images, eslint ignored during build, TypeScript build errors enforced.
 
-**Containerization:** the multi-stage `Dockerfile` builds on `node:20-alpine`, installs dependencies, runs `prisma generate`, builds the app, runs as a non-root `nextjs` user, exposes port `3000`, and launches with `CMD ["node", "server.js"]` (the standalone server). `docker-compose.yml` wires the app to a `postgres:16-alpine` service (user `mining_user`, database `mining_db`) with a healthcheck and a persistent `pgdata` volume. `.env.example` documents the required `DATABASE_URL`, `NEXTAUTH_URL`, and optional `ABACUSAI_API_KEY` / `HTML2PDF_API_URL`.
+**Containerization:** the multi-stage `Dockerfile` builds on `node:20-alpine`, installs dependencies, runs `prisma generate`, builds the app, runs as a non-root `nextjs` user, exposes port `3000`, and launches with `CMD ["node", "server.js"]` (the standalone server). `docker-compose.yml` wires the app to a `postgres:16-alpine` service (user `mining_user`, database `mining_db`) with a healthcheck and a persistent `pgdata` volume. `.env.example` documents the required `DATABASE_URL`, `NEXTAUTH_URL`, optional `ABACUSAI_API_KEY`, and optional `PUPPETEER_EXECUTABLE_PATH` / `CHROME_PATH` for PDF.
 
 Because the Prisma generator targets both `native` and `linux-musl-arm64-openssl-3.0.x`, the same schema produces a working client on developer machines and inside the Alpine/musl ARM64 container.
 
@@ -161,4 +161,4 @@ Because the Prisma generator targets both `native` and `linux-musl-arm64-openssl
 - **Compute-on-write.** Heavy analysis (including a 2000-iteration Monte Carlo) runs during the write request and results are cached on `MiningProject`, keeping reads cheap. Adding more per-request recomputation should be weighed against request latency.
 - **Connection discipline.** Use the Prisma singleton; assume a limited connection pool and short-lived, ephemeral connections. Avoid long transactions and per-request client construction.
 - **Graceful degradation.** The project list endpoint returns an empty array rather than failing, so a transient DB issue degrades the dashboard instead of breaking it.
-- **External-service resilience.** AI and PDF features depend on outbound Abacus.AI calls; both are isolated to their own routes so a failure there does not affect core CRUD or analysis.
+- **External-service resilience.** AI narrative depends on outbound Abacus.AI calls and is isolated to its own route. PDF rendering is local (Puppeteer) and fails independently of AI/DB.

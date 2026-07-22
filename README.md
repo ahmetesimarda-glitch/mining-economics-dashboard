@@ -13,7 +13,7 @@ Madencilik projelerinin ekonomik fizibilite analizini yapan kapsamlı web uygula
 - **Canlı Piyasa Verileri**: Altın, gümüş, bakır, platin, paladyum + döviz kurları
 - **Makina Referans Kütüphanesi**: Gerçekçi CAT/Komatsu/Sandvik/Epiroc fiyatları
 - **Emisyon Faktörleri**: IPCC/DEFRA standart değerleri
-- **Raporlama**: PDF, Excel (.xlsx), CSV dışa aktarma
+- **Raporlama**: Yerel Puppeteer PDF, ExcelJS mühendislik çalışma kitabı, CSV dışa aktarma
 - **Çok Dilli**: Türkçe / İngilizce
 - **Koyu Mod**: Otomatik tema desteği
 
@@ -90,7 +90,7 @@ pm2 save && pm2 startup
 - **Frontend**: Next.js 14, React 18, Tailwind CSS, Recharts, Framer Motion
 - **Backend**: Next.js API Routes, Prisma ORM
 - **Veritabanı**: PostgreSQL
-- **Diğer**: Leaflet (harita), xlsx (Excel), Sonner (bildirimler)
+- **Diğer**: Leaflet (harita), ExcelJS (Excel), Puppeteer (PDF), Sonner (bildirimler)
 
 ## 📁 Proje Yapısı
 

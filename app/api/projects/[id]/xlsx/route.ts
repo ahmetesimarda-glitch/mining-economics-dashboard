@@ -3,12 +3,15 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import {
+  calculateDepreciationTable,
+  calculateFuelAnalysis,
   runMonteCarloSimulation,
   sensitivityAnalysis,
   type ProjectParams,
   type SensitivityPoint,
 } from '@/lib/calculations';
 import { buildProfessionalWorkbook, workbookToBuffer } from '@/lib/reports/excel';
+import { buildTornadoBars } from '@/lib/reports/shared/tornado';
 
 export async function GET(
   _request: NextRequest,
@@ -22,6 +25,8 @@ export async function GET(
         equipments: true,
         personnels: true,
         byProducts: true,
+        capexItems: true,
+        opexItems: true,
       },
     });
     if (!project) {
@@ -35,15 +40,28 @@ export async function GET(
       sensitivity[param] = sensitivityAnalysis(p, param);
     }
     const monteCarlo = runMonteCarloSimulation(p, 2000);
+    const tornado = buildTornadoBars(p, Number(project.npv ?? 0));
+    const depreciation = calculateDepreciationTable(p);
+    const fuelAnalysis = calculateFuelAnalysis(
+      (project.equipments ?? []) as unknown as Record<string, unknown>[],
+      Number(project.fuelPricePerLiter ?? 0)
+    );
 
-    const wb = buildProfessionalWorkbook({
+    const wb = await buildProfessionalWorkbook({
       project: project as unknown as Record<string, unknown>,
       cashFlows: (project.cashFlows ?? []) as unknown as Record<string, unknown>[],
       equipments: (project.equipments ?? []) as unknown as Record<string, unknown>[],
+      personnels: (project.personnels ?? []) as unknown as Record<string, unknown>[],
+      byProducts: (project.byProducts ?? []) as unknown as Record<string, unknown>[],
+      capexItems: (project.capexItems ?? []) as unknown as Record<string, unknown>[],
+      opexItems: (project.opexItems ?? []) as unknown as Record<string, unknown>[],
       sensitivity,
       monteCarlo,
+      tornado,
+      depreciation,
+      fuelAnalysis,
     });
-    const buf = workbookToBuffer(wb);
+    const buf = await workbookToBuffer(wb);
     const fname = `${String(project.name ?? 'project')
       .replace(/[^\w\- ]+/g, '')
       .trim()}_Economic_Analysis.xlsx`;

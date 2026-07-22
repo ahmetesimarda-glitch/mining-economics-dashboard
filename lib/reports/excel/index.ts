@@ -1,5 +1,5 @@
 export {
   buildProfessionalWorkbook,
   workbookToBuffer,
-  type ExcelWorkbookInput,
 } from './build-workbook';
+export type { ExcelWorkbookInput } from './types';

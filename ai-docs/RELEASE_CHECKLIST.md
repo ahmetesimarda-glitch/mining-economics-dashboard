@@ -79,7 +79,7 @@
 ## 11. Environment Variables
 
 **Purpose:** all required config present, no secrets leaked.
-- **How to verify:** `DATABASE_URL` set; `NEXTAUTH_URL` correct for the environment (auto-set on Abacus; must match the real URL on self-host); optional `ABACUSAI_API_KEY` (AI + PDF) and `HTML2PDF_API_URL` set if those features are used; no secrets in the repo or client bundle.
+- **How to verify:** `DATABASE_URL` set; `NEXTAUTH_URL` correct for the environment (auto-set on Abacus; must match the real URL on self-host); optional `ABACUSAI_API_KEY` (AI only); Chrome/Chromium available for PDF (`PUPPETEER_EXECUTABLE_PATH` / `CHROME_PATH` on Railway/Docker); no secrets in the repo or client bundle.
 - **Common failure causes:** missing `DATABASE_URL`; wrong `NEXTAUTH_URL`; AI/PDF failing due to missing key; secret hardcoded.
 - **Recommended fixes:** populate from `.env.example`; read secrets only server-side. **(Blocker on missing `DATABASE_URL`.)**
 
@@ -135,7 +135,7 @@
 ## 19. PDF Export
 
 **Purpose:** PDF generation succeeds via the external service.
-- **How to verify:** `/api/projects/[id]/pdf` completes the `createConvertHtmlToPdfRequest` → poll `getConvertHtmlToPdfStatus` → base64→Buffer flow and returns a valid PDF; images resolve via public/runtime URLs.
+- **How to verify:** `/api/projects/[id]/pdf` renders HTML locally via Puppeteer (`renderHtmlToPdf`) and returns a valid multi-page PDF; no outbound Abacus HTML2PDF calls; Chrome/Chromium must be resolvable.
 - **Common failure causes:** missing key/URL; relative asset paths unreachable in production; polling timeout.
 - **Recommended fixes:** configure env; use absolute/public asset URLs; handle `FAILED`/timeout paths. **(Warning.)**
 

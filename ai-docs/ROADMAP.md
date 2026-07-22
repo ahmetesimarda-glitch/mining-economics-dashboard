@@ -23,7 +23,7 @@ Complexity is rated **S / M / L / XL**. Priority is **P0 (critical) → P3 (oppo
 - **Operational analysis** — `app/api/projects/[id]/operational/route.ts`.
 - **Live market data (metals + FX, 5-min in-memory cache)** — `app/api/market/route.ts`, `app/market/`.
 - **AI narrative analysis (streaming SSE, claude-sonnet-4-6)** — `app/api/projects/[id]/ai-analysis/route.ts`, `app/components/ai-analysis-panel.tsx`.
-- **Consulting-grade PDF + professional Excel** — `lib/reports/pdf/`, `lib/reports/excel/`, served by existing `/pdf` and `/xlsx` routes (Abacus HTML→PDF; SheetJS workbook).
+- **Consulting-grade PDF + professional Excel** — `lib/reports/pdf/`, `lib/reports/excel/`, served by existing `/pdf` and `/xlsx` routes (local Puppeteer PDF; ExcelJS engineering workbook).
 - **Multi-project comparison** — `app/compare/`.
 - **Bilingual UI (TR/EN)** — `lib/i18n/translations.ts` + provider/hook.
 - **Theming (dark default)** — `next-themes`.
