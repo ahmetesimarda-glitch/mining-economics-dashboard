@@ -47,9 +47,9 @@ NEXTAUTH_URL="https://sizin-domain.com"
 # Bu olmadan uygulama çalışır, sadece AI Rapor sekmesi devre dışı kalır.
 # ABACUSAI_API_KEY="sk-..."
 
-# (İsteğe bağlı) PDF raporu üretimi için HTML2PDF servisi
-# Bu olmadan uygulama çalışır, sadece PDF indirme devre dışı kalır.
-# HTML2PDF_API_URL="..."
+# (İsteğe bağlı) Yerel PDF için Chrome/Chromium yolu
+# Railway/Docker'da Chromium yolu farklıysa ayarlayın.
+# PUPPETEER_EXECUTABLE_PATH="/usr/bin/chromium"
 ```
 
 ### 2.4 Veritabanını Kur
