@@ -47,9 +47,9 @@ NEXTAUTH_URL="https://sizin-domain.com"
 # Bu olmadan uygulama çalışır, sadece AI Rapor sekmesi devre dışı kalır.
 # ABACUSAI_API_KEY="sk-..."
 
-# (İsteğe bağlı) PDF raporu üretimi için HTML2PDF servisi
-# Bu olmadan uygulama çalışır, sadece PDF indirme devre dışı kalır.
-# HTML2PDF_API_URL="..."
+# (İsteğe bağlı) Yerel PDF için Chrome/Chromium yolu
+# Railway/Docker'da Chromium yolu farklıysa ayarlayın.
+# PUPPETEER_EXECUTABLE_PATH="/usr/bin/chromium"
 ```
 
 ### 2.4 Veritabanını Kur
@@ -157,27 +157,24 @@ Bu bileşenler Abacus AI platformuna bağlıdır; kendi altyapınızda alternati
 
 | Özellik | Mevcut Durum | Alternatif |
 |---------|-------------|------------|
-| **PDF Raporu** | Abacus HTML2PDF API | Puppeteer/Playwright (kendi sunucunuzda) veya [Gotenberg](https://gotenberg.dev/) |
+| **PDF Raporu** | Yerel Puppeteer (`puppeteer-core` + Chrome/Chromium) | Railway/Docker'da Chromium kurun; `PUPPETEER_EXECUTABLE_PATH` ayarlayın |
 | **AI Analizi** | Abacus LLM API (OpenAI uyumlu) | OpenAI API, Anthropic API, veya yerel Ollama |
 | **Veritabanı** | Abacus barındırmalı PostgreSQL | Kendi PostgreSQL sunucunuz |
 
-### 4.1 PDF Raporu İçin Değişiklik
+### 4.1 PDF Raporu
 
-`app/api/projects/[id]/pdf/route.ts` dosyasında Abacus HTML2PDF API yerine Puppeteer kullanmak için:
+PDF üretimi artık Abacus HTML2PDF'e bağlı değildir. `app/api/projects/[id]/pdf/route.ts` HTML raporu oluşturur ve `lib/reports/pdf/render-local-pdf.ts` içinde Puppeteer ile yerelde PDF'e çevirir.
+
+Railway / Docker için:
 
 ```bash
-npm install puppeteer
+# Debian/Ubuntu tabanlı image
+apt-get install -y chromium
+# veya
+export PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ```
 
-Ardından API çağrısını `puppeteer` ile değiştirin:
-```typescript
-import puppeteer from 'puppeteer';
-const browser = await puppeteer.launch();
-const page = await browser.newPage();
-await page.setContent(html);
-const pdf = await page.pdf({ format: 'A4' });
-await browser.close();
-```
+Gerekli launch bayrakları (`--no-sandbox`, `--disable-dev-shm-usage`) kodda zaten ayarlıdır.
 
 ### 4.2 AI Analizi İçin Değişiklik
 

@@ -34,8 +34,8 @@ Mining engineering students and professionals performing feasibility studies. Th
 | ORM / DB | **Prisma 6.7** + **PostgreSQL** |
 | Animation | **Framer Motion** |
 | Theming | **next-themes** (dark theme is the default) |
-| Excel export | **`xlsx`** (SheetJS) |
-| PDF export | **Abacus HTML2PDF API** (external HTTP service; no local headless browser) |
+| Excel export | **`exceljs`** (professional multi-sheet workbook; `xlsx` retained unused) |
+| PDF export | **Local Puppeteer** (`puppeteer-core` + system Chrome/Chromium; no Abacus HTML2PDF) |
 | AI analysis | **Abacus RouteLLM API** (OpenAI-compatible `chat/completions`, model `claude-sonnet-4-6`, streaming SSE) |
 | Live market data | `gold-api.com` (metals) + `open.er-api.com` (FX) |
 | Forms / validation | `react-hook-form`, `zod` |
@@ -126,7 +126,7 @@ Master Data UI/API live under `app/master-data/**` and `app/api/master-data/**`.
 11. **Market Data** (`app/market`, `/api/market`): live metal prices and FX rates with 5-minute caching.
 12. **AI Analysis** (`/api/projects/[id]/ai-analysis`, `ai-analysis-panel.tsx`): streaming LLM-generated narrative feasibility assessment.
 13. **Comparison** (`app/compare`): side-by-side comparison of multiple projects.
-14. **Exports**: **Excel** (`/api/projects/[id]/xlsx` via `lib/reports/excel/`) and **PDF** (`/api/projects/[id]/pdf` via `lib/reports/pdf/` + Abacus HTML2PDF).
+14. **Exports**: **Excel** (`/api/projects/[id]/xlsx` via `lib/reports/excel/` + ExcelJS) and **PDF** (`/api/projects/[id]/pdf` via `lib/reports/pdf/` + local Puppeteer).
 15. **Internal demo analytics**: `/internal/demo-analytics` (pre-auth visitor events).
 16. **Mining Market Insights**: placeholder news architecture on the dashboard (`lib/news/`).
 15. **Internationalization**: full TR/EN switching via `lib/i18n`.
