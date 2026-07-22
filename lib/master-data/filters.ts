@@ -10,6 +10,7 @@ export interface EquipmentCatalogFilterInput {
   q?: string | null;
   category?: string | null;
   manufacturer?: string | null;
+  powerType?: string | null;
   isActive?: string | null;
 }
 
@@ -68,6 +69,11 @@ export function buildEquipmentCatalogWhere(
     where.manufacturer = { equals: manufacturer, mode: 'insensitive' };
   }
 
+  const powerType = filters.powerType?.trim();
+  if (powerType && powerType !== 'all') {
+    where.powerType = { equals: powerType, mode: 'insensitive' };
+  }
+
   const isActive = parseActive(filters.isActive ?? null);
   if (typeof isActive === 'boolean') {
     where.isActive = isActive;
@@ -112,6 +118,9 @@ export function equipmentFiltersToSearchParams(
   }
   if (filters.manufacturer && filters.manufacturer !== 'all') {
     params.set('manufacturer', filters.manufacturer);
+  }
+  if (filters.powerType && filters.powerType !== 'all') {
+    params.set('powerType', filters.powerType);
   }
   if (filters.isActive && filters.isActive !== 'all') {
     params.set('isActive', filters.isActive);

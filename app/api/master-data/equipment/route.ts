@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
       q: searchParams.get('q'),
       category: searchParams.get('category'),
       manufacturer: searchParams.get('manufacturer'),
+      powerType: searchParams.get('powerType'),
       isActive: searchParams.get('isActive'),
     });
 

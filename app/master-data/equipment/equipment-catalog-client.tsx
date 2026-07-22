@@ -31,13 +31,16 @@ export function EquipmentCatalogClient() {
   const [items, setItems] = useState<EquipmentCatalogItemDto[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(50);
   const [totalPages, setTotalPages] = useState(1);
   const [q, setQ] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [manufacturer, setManufacturer] = useState('all');
   const [category, setCategory] = useState('all');
+  const [powerType, setPowerType] = useState('all');
   const [activeFilter, setActiveFilter] = useState('all');
+  const [sort, setSort] = useState('sortOrder');
+  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
   const [viewMode, setViewMode] = useState<EquipmentCatalogViewMode>('table');
   const [manufacturers, setManufacturers] = useState<string[]>([
     ...EQUIPMENT_OEM_MANUFACTURERS,
@@ -87,11 +90,12 @@ export function EquipmentCatalogClient() {
       const params = equipmentFiltersToSearchParams({
         page,
         pageSize,
-        sort: 'sortOrder',
-        order: 'asc',
+        sort,
+        order,
         q,
         category,
         manufacturer,
+        powerType,
         isActive: activeFilter,
       });
 
@@ -110,7 +114,7 @@ export function EquipmentCatalogClient() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, q, category, manufacturer, activeFilter, t]);
+  }, [page, pageSize, sort, order, q, category, manufacturer, powerType, activeFilter, t]);
 
   useEffect(() => {
     void loadFacets();
@@ -119,6 +123,19 @@ export function EquipmentCatalogClient() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Debounced live search — keeps Enter/button search, adds typing UX.
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      const next = searchInput.trim();
+      setQ((prev) => {
+        if (prev === next) return prev;
+        setPage(1);
+        return next;
+      });
+    }, 350);
+    return () => window.clearTimeout(handle);
+  }, [searchInput]);
 
   const openCreate = () => {
     setEditing(null);
@@ -212,6 +229,19 @@ export function EquipmentCatalogClient() {
     setQ(searchInput.trim());
   };
 
+  const clearFilters = () => {
+    setSearchInput('');
+    setQ('');
+    setManufacturer('all');
+    setCategory('all');
+    setPowerType('all');
+    setActiveFilter('all');
+    setSort('sortOrder');
+    setOrder('asc');
+    setPageSize(50);
+    setPage(1);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -233,13 +263,34 @@ export function EquipmentCatalogClient() {
             setPage(1);
             setCategory(v);
           }}
+          powerType={powerType}
+          onPowerTypeChange={(v) => {
+            setPage(1);
+            setPowerType(v);
+          }}
           activeFilter={activeFilter}
           onActiveFilterChange={(v) => {
             setPage(1);
             setActiveFilter(v);
           }}
+          sort={sort}
+          onSortChange={(v) => {
+            setPage(1);
+            setSort(v);
+          }}
+          order={order}
+          onOrderChange={(v) => {
+            setPage(1);
+            setOrder(v);
+          }}
+          pageSize={pageSize}
+          onPageSizeChange={(v) => {
+            setPage(1);
+            setPageSize(v);
+          }}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          onClearFilters={clearFilters}
           total={total}
           categoryLabel={categoryLabel}
         />

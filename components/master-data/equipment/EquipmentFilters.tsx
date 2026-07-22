@@ -10,10 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { EQUIPMENT_CATALOG_CATEGORIES } from '@/lib/master-data';
+import {
+  EQUIPMENT_CATALOG_CATEGORIES,
+  EQUIPMENT_POWER_TYPES,
+} from '@/lib/master-data';
 import { useLanguage } from '@/lib/i18n/context';
 import { cn } from '@/lib/utils';
-import { LayoutGrid, List, Search } from 'lucide-react';
+import { LayoutGrid, List, RotateCcw, Search } from 'lucide-react';
 
 interface EquipmentFiltersProps {
   searchInput: string;
@@ -24,10 +27,19 @@ interface EquipmentFiltersProps {
   manufacturers: string[];
   category: string;
   onCategoryChange: (value: string) => void;
+  powerType: string;
+  onPowerTypeChange: (value: string) => void;
   activeFilter: string;
   onActiveFilterChange: (value: string) => void;
+  sort: string;
+  onSortChange: (value: string) => void;
+  order: 'asc' | 'desc';
+  onOrderChange: (value: 'asc' | 'desc') => void;
+  pageSize: number;
+  onPageSizeChange: (value: number) => void;
   viewMode: 'table' | 'card';
   onViewModeChange: (mode: 'table' | 'card') => void;
+  onClearFilters: () => void;
   total: number;
   categoryLabel: (value: string) => string;
 }
@@ -41,10 +53,19 @@ export function EquipmentFilters({
   manufacturers,
   category,
   onCategoryChange,
+  powerType,
+  onPowerTypeChange,
   activeFilter,
   onActiveFilterChange,
+  sort,
+  onSortChange,
+  order,
+  onOrderChange,
+  pageSize,
+  onPageSizeChange,
   viewMode,
   onViewModeChange,
+  onClearFilters,
   total,
   categoryLabel,
 }: EquipmentFiltersProps) {
@@ -109,6 +130,23 @@ export function EquipmentFilters({
         </div>
 
         <div className="w-36 space-y-1.5">
+          <Label className="text-xs text-muted-foreground">{t('equipCat.powerType')}</Label>
+          <Select value={powerType} onValueChange={onPowerTypeChange}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('equipCat.allPowerTypes')}</SelectItem>
+              {EQUIPMENT_POWER_TYPES.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {t(`equipCat.power.${p}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="w-36 space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t('equipCat.status')}</Label>
           <Select value={activeFilter} onValueChange={onActiveFilterChange}>
             <SelectTrigger>
@@ -118,6 +156,53 @@ export function EquipmentFilters({
               <SelectItem value="all">{t('equipCat.allStatuses')}</SelectItem>
               <SelectItem value="true">{t('equipCat.active')}</SelectItem>
               <SelectItem value="false">{t('equipCat.inactive')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="w-40 space-y-1.5">
+          <Label className="text-xs text-muted-foreground">{t('equipCat.sort')}</Label>
+          <Select value={sort} onValueChange={onSortChange}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="sortOrder">{t('equipCat.sortDefault')}</SelectItem>
+              <SelectItem value="manufacturer">{t('equipCat.colManufacturer')}</SelectItem>
+              <SelectItem value="model">{t('equipCat.colModel')}</SelectItem>
+              <SelectItem value="category">{t('equipCat.colCategory')}</SelectItem>
+              <SelectItem value="purchasePriceUsd">{t('equipCat.colPrice')}</SelectItem>
+              <SelectItem value="updatedAt">{t('equipCat.lastUpdated')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="w-28 space-y-1.5">
+          <Label className="text-xs text-muted-foreground">{t('equipCat.order')}</Label>
+          <Select value={order} onValueChange={(v) => onOrderChange(v as 'asc' | 'desc')}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="asc">{t('equipCat.orderAsc')}</SelectItem>
+              <SelectItem value="desc">{t('equipCat.orderDesc')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="w-28 space-y-1.5">
+          <Label className="text-xs text-muted-foreground">{t('equipCat.pageSize')}</Label>
+          <Select
+            value={String(pageSize)}
+            onValueChange={(v) => onPageSizeChange(Number(v))}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -146,6 +231,20 @@ export function EquipmentFilters({
               <LayoutGrid className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground opacity-0">.</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 gap-1.5"
+            onClick={onClearFilters}
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            {t('equipCat.clearFilters')}
+          </Button>
         </div>
       </div>
       <p className="text-xs text-muted-foreground">

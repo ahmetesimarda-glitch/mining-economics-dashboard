@@ -10,12 +10,24 @@ export const EQUIPMENT_CATALOG_CATEGORIES = [
   'dozer',
   'grader',
   'drill',
+  'waterTruck',
+  'serviceTruck',
+  'support',
   'underground',
   'undergroundTruck',
   'undergroundLoader',
   'jumbo',
+  'bolter',
+  'shotcrete',
+  'scaler',
   'crusher',
-  'support',
+  'screen',
+  'mill',
+  'conveyor',
+  'stacker',
+  'pump',
+  'compressor',
+  'thickener',
   'general',
 ] as const;
 
@@ -33,6 +45,11 @@ export const EQUIPMENT_OEM_MANUFACTURERS = [
   'Volvo CE',
   'Sandvik',
   'Epiroc',
+  'Atlas Copco',
+  'Metso',
+  'FLSmidth',
+  'Normet',
+  'MacLean',
   'Bell',
   'XCMG',
   'SANY',
@@ -74,6 +91,7 @@ export interface EquipmentCatalogListQuery {
   q?: string;
   category?: string;
   manufacturer?: string;
+  powerType?: string;
   isActive?: boolean | 'all';
   page?: number;
   pageSize?: number;

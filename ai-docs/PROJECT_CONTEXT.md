@@ -130,7 +130,7 @@ Master Data UI/API live under `app/master-data/**` and `app/api/master-data/**`.
 15. **Internal demo analytics**: `/internal/demo-analytics` (pre-auth visitor events).
 16. **Mining Market Insights**: placeholder news architecture on the dashboard (`lib/news/`).
 15. **Internationalization**: full TR/EN switching via `lib/i18n`.
-16. **Master Data — Equipment Catalog** (`/master-data/equipment`, `/api/master-data/equipment`): commercial CRUD catalog with OEM-aware search, manufacturer/category/active filters, table/card views, detail drawer, facets endpoint, and snapshot Add-to-Project into the fleet.
+16. **Master Data — Equipment Catalog** (`/master-data/equipment`, `/api/master-data/equipment`): commercial CRUD catalog (~445 OEM seed rows) with OEM-aware search, manufacturer/category/power/active filters, sort + page size, table/card views, detail drawer, facets endpoint, and snapshot Add-to-Project into the fleet. Seed architecture lives under `lib/master-data/seed/` (regenerable via `scripts/generate-equipment-catalog.py`).
 17. **Public Demo Experience**: first-visit welcome dialog, **eight commercial demo projects** (copper/Chile, gold/Türkiye, iron/Brazil, lithium/Argentina, nickel/Canada, coal/Australia, zinc/Peru, rare earth/Sweden), Demo badge, portfolio gallery cards, and browser localStorage for welcome dismissal / last opened / visitor-created project ids (auth-free). Seeded via reusable `lib/demo/` catalog + `ensureAllDemoProjects`.
 
 ---
