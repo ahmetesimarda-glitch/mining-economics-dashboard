@@ -291,3 +291,19 @@ model EquipmentCatalogItem {
   @@index([manufacturer])
   @@index([model])
 }
+
+/// Auth-free demo analytics events (becomes Admin Dashboard after authentication).
+model DemoAnalyticsEvent {
+  id        String   @id @default(cuid())
+  visitorId String
+  eventType String
+  projectId String?
+  path      String   @default("")
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([visitorId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([visitorId, createdAt])
+}

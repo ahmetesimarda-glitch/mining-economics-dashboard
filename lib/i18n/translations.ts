@@ -175,6 +175,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     'dash.noProjectsDesc': 'İlk maden projenizi ekleyerek ekonomik analize başlayın.',
     'dash.createProject': 'Proje Oluştur',
     'dash.loadError': 'Projeler yüklenemedi',
+    'news.sectionTitle': 'Mining Market Insights',
+    'news.sectionSubtitle': 'Piyasa ve sektör özetleri (yer tutucu — canlı haber API’si yok).',
+    'news.placeholderBadge': 'Placeholder',
+    'form.locationSearch': 'Konum ara (ülke / eyalet / şehir)',
 
     // === DEMO EXPERIENCE ===
     'demo.badge': 'Demo Proje',
@@ -847,6 +851,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     'dash.noProjectsDesc': 'Start your economic analysis by creating your first mining project.',
     'dash.createProject': 'Create Project',
     'dash.loadError': 'Failed to load projects',
+    'news.sectionTitle': 'Mining Market Insights',
+    'news.sectionSubtitle': 'Market and sector briefs (placeholder — no live news API).',
+    'news.placeholderBadge': 'Placeholder',
+    'form.locationSearch': 'Search location (country / state / city)',
 
     // === DEMO EXPERIENCE ===
     'demo.badge': 'Demo Project',

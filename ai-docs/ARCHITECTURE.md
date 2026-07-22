@@ -101,8 +101,35 @@ The economic semantics (Year-0 outflow, royalty basis, tax gating, discounting, 
 
 ## 8. Export Subsystem (PDF & Spreadsheet)
 
-- **PDF:** `app/api/projects/[id]/pdf/route.ts` builds an HTML report and calls the Abacus.AI HTML-to-PDF service. It POSTs to `createConvertHtmlToPdfRequest` to obtain a `request_id`, then polls `getConvertHtmlToPdfStatus` until the status is `SUCCESS` (the base64 `result` is decoded to a Buffer and returned as a PDF), `FAILED`, or a timeout is reached. This offloads headless-browser rendering, which is unavailable in the production runtime.
-- **Spreadsheet:** `xlsx` is available for Excel import/export of project data.
+- **PDF:** `lib/reports/pdf/` builds a consulting-grade HTML report (cover, TOC, executive summary, project info, economics, equipment, financials, sensitivity, Monte Carlo, conclusion, disclaimer). `app/api/projects/[id]/pdf/route.ts` orchestrates analysis via the existing engine (`performFullAnalysis`, `sensitivityAnalysis`, `runMonteCarloSimulation`) and calls the Abacus.AI HTML-to-PDF service: POST `createConvertHtmlToPdfRequest` → poll `getConvertHtmlToPdfStatus` → decode base64 `result` to a Buffer. No local headless browser.
+- **Spreadsheet:** `lib/reports/excel/` builds a multi-sheet workbook (Summary, Project Information, Economics, Cash Flow, Equipment, Sensitivity, Monte Carlo, Charts data). Served by `app/api/projects/[id]/xlsx/route.ts` via SheetJS (`xlsx`). Community SheetJS does not embed chart objects; the Charts sheet holds series data for external charting.
+- **Numbers:** export builders must call the engine / stored results — never re-implement formulas.
+
+---
+
+## 8b. Demo Analytics (pre-auth)
+
+- **Route:** `/internal/demo-analytics` (hidden admin precursor; no authentication yet).
+- **Storage:** `DemoAnalyticsEvent` (visitor UUID, event type, optional projectId, path, metadata, timestamp).
+- **Client:** `lib/analytics/` — stable visitor UUID in `localStorage`, fire-and-forget `trackAnalyticsEvent`, session bootstrap.
+- **API:** `POST /api/internal/analytics/events`, `GET /api/internal/analytics/summary`.
+- After authentication lands, this page becomes the Admin Dashboard (ownership-scoped queries).
+
+---
+
+## 8c. Location search (GIS-ready)
+
+- **Service:** `lib/location/` normalizes City/State/Country strings and searches Nominatim server-side (`GET /api/location/search`).
+- **UI:** compact `LocationSearch` on the existing project form (no form redesign). Selection fills `location` + `latitude`/`longitude`.
+- **Map:** `ProjectMap` uses OpenStreetMap raster tiles. Future GIS layers can consume the same normalized fields without schema churn until a dedicated GIS model is added.
+
+---
+
+## 8d. Mining Market Insights (architecture only)
+
+- **Layer:** `lib/news/` — types, placeholder articles, `NewsService` interface + `PlaceholderNewsService`.
+- **UI:** reusable `NewsCard` + dashboard section `MiningMarketInsights` (“Mining Market Insights”).
+- **No live APIs.** Future commodity/news/AI brief providers implement `NewsService` without changing UI contracts.
 
 ---
 

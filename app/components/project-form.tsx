@@ -35,6 +35,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { LocationSearch } from '@/app/components/location/location-search';
+import { formatNormalizedLocation } from '@/lib/location';
+import { trackAnalyticsEvent } from '@/lib/analytics';
 
 interface ProjectFormProps {
   initialData?: any;
@@ -415,6 +418,7 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
           const { trackCreatedProjectId, setLastOpenedProjectId } = await import('@/lib/demo');
           trackCreatedProjectId(data.id);
           setLastOpenedProjectId(data.id);
+          void trackAnalyticsEvent('new_project_created', { projectId: data.id });
         }
         router.push(`/projects/${data?.id ?? ''}`);
       } else {
@@ -476,6 +480,24 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
               </div>
               <FormField label="Lokasyon" name="location" value={form?.location} onChange={handleChange} type="text" placeholder="Örn: Muğla, Türkiye" />
               <FormField label="Proje Ömrü" name="projectLifeYears" value={form?.projectLifeYears} onChange={handleChange} suffix="yıl" />
+            </div>
+            <div className="mt-4">
+              <LocationSearch
+                onSelect={(result) => {
+                  const normalized =
+                    formatNormalizedLocation({
+                      city: result.city,
+                      state: result.state,
+                      country: result.country,
+                    }) || result.label;
+                  setForm((prev: Record<string, unknown>) => ({
+                    ...prev,
+                    location: normalized,
+                    latitude: result.latitude,
+                    longitude: result.longitude,
+                  }));
+                }}
+              />
             </div>
             {/* Reserves & Capacity */}
             <div>
@@ -973,10 +995,26 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
             </div>
             <div>
               <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><Mountain className="h-4 w-4 text-primary" /> Konum (Harita İçin)</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <FormField label="Enlem (Latitude)" name="latitude" value={form?.latitude} onChange={handleChange} placeholder="39.9334" />
                 <FormField label="Boylam (Longitude)" name="longitude" value={form?.longitude} onChange={handleChange} placeholder="32.8597" />
               </div>
+              <LocationSearch
+                onSelect={(result) => {
+                  const normalized =
+                    formatNormalizedLocation({
+                      city: result.city,
+                      state: result.state,
+                      country: result.country,
+                    }) || result.label;
+                  setForm((prev: Record<string, unknown>) => ({
+                    ...prev,
+                    location: normalized,
+                    latitude: result.latitude,
+                    longitude: result.longitude,
+                  }));
+                }}
+              />
             </div>
           </div>
         );

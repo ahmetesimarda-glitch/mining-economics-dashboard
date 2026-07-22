@@ -23,12 +23,15 @@ Complexity is rated **S / M / L / XL**. Priority is **P0 (critical) → P3 (oppo
 - **Operational analysis** — `app/api/projects/[id]/operational/route.ts`.
 - **Live market data (metals + FX, 5-min in-memory cache)** — `app/api/market/route.ts`, `app/market/`.
 - **AI narrative analysis (streaming SSE, claude-sonnet-4-6)** — `app/api/projects/[id]/ai-analysis/route.ts`, `app/components/ai-analysis-panel.tsx`.
-- **Exports** — Excel (`app/api/projects/[id]/xlsx/route.ts`) and PDF (`app/api/projects/[id]/pdf/route.ts` via Abacus HTML2PDF).
+- **Consulting-grade PDF + professional Excel** — `lib/reports/pdf/`, `lib/reports/excel/`, served by existing `/pdf` and `/xlsx` routes (Abacus HTML→PDF; SheetJS workbook).
 - **Multi-project comparison** — `app/compare/`.
 - **Bilingual UI (TR/EN)** — `lib/i18n/translations.ts` + provider/hook.
 - **Theming (dark default)** — `next-themes`.
 - **Master Data — Equipment Catalog** — `EquipmentCatalogItem` + `/api/master-data/equipment` + `/master-data/equipment` UI; project form snapshots into `Equipment`.
 - **Public Demo Experience** — always-available Copper Mine Demo (`demo-copper-mine`), first-visit welcome dialog, Demo badge, localStorage for welcome/last-opened/created projects (auth-free).
+- **Internal demo analytics** — `/internal/demo-analytics`, `DemoAnalyticsEvent`, visitor UUID + funnel/timeline (`lib/analytics/`). Pre-auth precursor to Admin Dashboard.
+- **Project location search** — Nominatim proxy (`/api/location/search`), normalized City/State/Country strings, OSM map tiles (`ProjectMap`). GIS-ready; no form redesign.
+- **Mining Market Insights (architecture)** — `lib/news/` service + placeholder `NewsCard` section on dashboard. No live news/commodity/AI APIs yet.
 - **Two deployment paths** — Abacus managed (`next.config.js`) and self-host/Docker/Railway (`next.config.github.js`, `Dockerfile`, `docker-compose.yml`, `SELF_HOST_GUIDE.md`).
 
 ### Partially implemented / has known gaps

@@ -37,6 +37,10 @@ All relations are one-to-many from `MiningProject` to the child tables. There ar
 
 `EquipmentCatalogItem` is **not** a child of `MiningProject`. It is the first Master Data catalog table: system reference equipment (manufacturer, model, technical and economic parameters). Projects copy (snapshot) values into `Equipment` rows via the project form; catalog edits never rewrite historical fleets. There is intentionally **no** foreign key from `Equipment` → `EquipmentCatalogItem` in this version.
 
+### Demo analytics (standalone)
+
+`DemoAnalyticsEvent` is a standalone event log (not related to `MiningProject` via FK). It stores pre-auth demo telemetry: `visitorId`, `eventType`, optional `projectId`, `path`, `metadata` (JSON), `createdAt`. Indexed on `visitorId`, `eventType`, `createdAt`, and `[visitorId, createdAt]`. After authentication, this becomes the basis for an Admin Dashboard (ownership-scoped).
+
 ---
 
 ## 3. Models
@@ -196,7 +200,9 @@ All relations are one-to-many from `MiningProject` to the child tables. There ar
 ## 6. Future Expansion Notes
 
 - **Master Data catalogs:** `EquipmentCatalogItem` is the first implemented catalog. Future catalogs (commodity, country, currency, units, fuel types, processing methods, labour categories) should follow the same standalone-root pattern — no FK from projects into catalog rows for live joins. Projects **snapshot** values at write time.
-- **Authentication tables:** `next-auth` and `@next-auth/prisma-adapter` are installed but there are currently **no** `User`/`Account`/`Session`/`VerificationToken` models in the schema. Adding auth means introducing those models (and a `MiningProject.userId` owner relation) as an additive, non-destructive migration.
+- **Authentication tables:** `next-auth` and `@next-auth/prisma-adapter` are installed but there are currently **no** `User`/`Account`/`Session`/`VerificationToken` models in the schema. Adding auth means introducing those models (and a `MiningProject.userId` owner relation) as an additive, non-destructive migration. Migrate `/internal/demo-analytics` → Admin Dashboard with ownership filters; keep `DemoAnalyticsEvent` additive.
+- **Mining news / AI brief:** `lib/news/` is placeholder-only. Live commodity/news APIs and AI daily summaries should implement `NewsService` without changing `NewsCard` / dashboard contracts. Optional additive `NewsArticle` persistence later.
+- **GIS:** location remains free-text `location` + lat/lng on `MiningProject`. Future GIS can add normalized country/state/city columns or a `ProjectLocation` child additively; Nominatim search already returns normalized parts.
 - **Introducing enums:** enum-like `String` fields could be promoted to Prisma `enum` types for stronger typing, but doing so is a breaking migration and requires backfilling/validating existing values first.
 - **Auditing & soft-delete:** child tables have no timestamps and deletes are hard cascades. If history or soft-delete is needed, add `deletedAt`/audit columns additively rather than changing cascade behavior.
 - **Migration safety:** all schema changes must be backward-compatible. Never run `prisma db push --accept-data-loss` or `--force-reset` against the shared database; prefer additive migrations and explicit backfills.

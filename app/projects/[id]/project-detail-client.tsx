@@ -21,6 +21,7 @@ import { formatMUSD, formatPercent, formatYear, formatNumber } from '@/lib/forma
 import { useLanguage } from '@/lib/i18n/context';
 import { DemoBadge } from '@/components/demo/DemoBadge';
 import { isDemoProjectId, setLastOpenedProjectId } from '@/lib/demo';
+import { trackAnalyticsEvent } from '@/lib/analytics';
 import {
   DollarSign, TrendingUp, Clock, Target, Loader2, Edit, ArrowLeft,
   Mountain, BarChart3, PieChart, LineChart, Table as TableIcon, FileDown,
@@ -61,6 +62,21 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
   useEffect(() => {
     if (projectId) setLastOpenedProjectId(projectId);
   }, [projectId]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    void trackAnalyticsEvent('project_opened', { projectId });
+    void trackAnalyticsEvent('report_viewed', { projectId });
+    if (isDemoProjectId(projectId)) {
+      void trackAnalyticsEvent('demo_project_opened', { projectId });
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    if (sensitivity) {
+      void trackAnalyticsEvent('sensitivity_executed', { projectId });
+    }
+  }, [sensitivity, projectId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,7 +132,10 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
     setMcLoading(true);
     try {
       const res = await fetch(`/api/projects/${projectId}/montecarlo`);
-      if (res?.ok) setMcData(await res?.json());
+      if (res?.ok) {
+        setMcData(await res?.json());
+        void trackAnalyticsEvent('monte_carlo_executed', { projectId });
+      }
     } catch (err: any) { console.error(err); }
     finally { setMcLoading(false); }
   };
@@ -262,6 +281,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
         const url = window?.URL?.createObjectURL?.(blob);
         const a = document?.createElement?.('a');
         if (a) { a.href = url ?? ''; a.download = `${p?.name ?? 'proje'}_analiz.xlsx`; a.click?.(); window?.URL?.revokeObjectURL?.(url ?? ''); }
+        void trackAnalyticsEvent('excel_exported', { projectId });
       }
     } catch (err: any) { console.error(err); }
   };
@@ -275,6 +295,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
         const url = window?.URL?.createObjectURL?.(blob);
         const a = document?.createElement?.('a');
         if (a) { a.href = url ?? ''; a.download = `${p?.name ?? 'proje'}_fizibilite_raporu.pdf`; a.click?.(); window?.URL?.revokeObjectURL?.(url ?? ''); }
+        void trackAnalyticsEvent('pdf_generated', { projectId });
       }
     } catch (err: any) { console.error(err); }
     finally { setPdfLoading(false); }

@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n/context';
 import { WelcomeDialog } from '@/components/demo/WelcomeDialog';
+import { MiningMarketInsights } from '@/app/components/news/mining-market-insights';
 import {
   DEMO_PROJECT_ID,
   dismissWelcomePermanently,
@@ -19,6 +20,7 @@ import {
   setLastOpenedProjectId,
   untrackCreatedProjectId,
 } from '@/lib/demo';
+import { bootstrapAnalyticsSession } from '@/lib/analytics';
 import { toast } from 'sonner';
 
 interface DashboardProject {
@@ -59,6 +61,10 @@ export function DashboardClient() {
     if (!isWelcomeDismissed()) {
       setWelcomeOpen(true);
     }
+    const cleanup = bootstrapAnalyticsSession();
+    return () => {
+      cleanup?.();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -149,6 +155,8 @@ export function DashboardClient() {
             color="text-blue-500"
           />
         </div>
+
+        <MiningMarketInsights />
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-xl font-semibold tracking-tight">

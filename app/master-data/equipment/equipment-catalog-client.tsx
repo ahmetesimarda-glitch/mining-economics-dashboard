@@ -24,6 +24,7 @@ import { EquipmentDialog } from '@/components/master-data/equipment/EquipmentDia
 import { EquipmentDetailDrawer } from '@/components/master-data/equipment/EquipmentDetailDrawer';
 import { EquipmentAddToProjectDialog } from '@/components/master-data/equipment/EquipmentAddToProjectDialog';
 import { toast } from 'sonner';
+import { trackAnalyticsEvent } from '@/lib/analytics';
 
 export function EquipmentCatalogClient() {
   const { t } = useLanguage();
@@ -55,6 +56,10 @@ export function EquipmentCatalogClient() {
 
   const [deleteTarget, setDeleteTarget] = useState<EquipmentCatalogItemDto | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    void trackAnalyticsEvent('equipment_viewed');
+  }, []);
 
   const categoryLabel = useCallback(
     (value: string) => {
