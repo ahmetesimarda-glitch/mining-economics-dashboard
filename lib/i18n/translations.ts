@@ -176,6 +176,15 @@ export const translations: Record<Locale, Record<string, string>> = {
     'dash.createProject': 'Proje Oluştur',
     'dash.loadError': 'Projeler yüklenemedi',
 
+    // === DEMO EXPERIENCE ===
+    'demo.badge': 'Demo Proje',
+    'demo.welcomeTitle': 'Mining Economics Dashboard’a Hoş Geldiniz',
+    'demo.welcomeBody': 'Eksiksiz bir maden fizibilite projesini keşfedin veya sıfırdan kendi projenizi oluşturun.',
+    'demo.exploreDemo': 'Demoyu Keşfet',
+    'demo.createNew': 'Yeni Proje Oluştur',
+    'demo.dismiss': 'Bir daha gösterme',
+    'demo.cannotDelete': 'Demo proje silinemez',
+
     // === PROJECT CARD ===
     'card.project': 'Proje',
     'card.feasible': 'Fizibil',
@@ -838,6 +847,15 @@ export const translations: Record<Locale, Record<string, string>> = {
     'dash.noProjectsDesc': 'Start your economic analysis by creating your first mining project.',
     'dash.createProject': 'Create Project',
     'dash.loadError': 'Failed to load projects',
+
+    // === DEMO EXPERIENCE ===
+    'demo.badge': 'Demo Project',
+    'demo.welcomeTitle': 'Welcome to Mining Economics Dashboard',
+    'demo.welcomeBody': 'Explore a complete mining feasibility project, or create your own project from scratch.',
+    'demo.exploreDemo': 'Explore Demo',
+    'demo.createNew': 'Create New Project',
+    'demo.dismiss': 'Don’t show again',
+    'demo.cannotDelete': 'The demo project cannot be deleted',
 
     // === PROJECT CARD ===
     'card.project': 'Project',

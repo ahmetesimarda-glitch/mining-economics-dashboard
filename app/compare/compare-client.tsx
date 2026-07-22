@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Cell } from 'recharts';
 import { useLanguage } from '@/lib/i18n/context';
+import { filterDemoWorkspaceProjects } from '@/lib/demo';
 
 const COLORS = ['#60B5FF', '#FF9149', '#FF9898', '#80D8C3', '#A19AD3', '#FF90BB', '#72BF78', '#FF6363'];
 
@@ -19,9 +20,10 @@ export function CompareClient() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
+        await fetch('/api/demo/ensure');
         const res = await fetch('/api/projects');
         const data = await res?.json();
-        setProjects(data ?? []);
+        setProjects(filterDemoWorkspaceProjects(Array.isArray(data) ? data : []));
       } catch (err: any) {
         console.error(err);
       } finally {

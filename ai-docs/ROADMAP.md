@@ -28,6 +28,7 @@ Complexity is rated **S / M / L / XL**. Priority is **P0 (critical) → P3 (oppo
 - **Bilingual UI (TR/EN)** — `lib/i18n/translations.ts` + provider/hook.
 - **Theming (dark default)** — `next-themes`.
 - **Master Data — Equipment Catalog** — `EquipmentCatalogItem` + `/api/master-data/equipment` + `/master-data/equipment` UI; project form snapshots into `Equipment`.
+- **Public Demo Experience** — always-available Copper Mine Demo (`demo-copper-mine`), first-visit welcome dialog, Demo badge, localStorage for welcome/last-opened/created projects (auth-free).
 - **Two deployment paths** — Abacus managed (`next.config.js`) and self-host/Docker/Railway (`next.config.github.js`, `Dockerfile`, `docker-compose.yml`, `SELF_HOST_GUIDE.md`).
 
 ### Partially implemented / has known gaps

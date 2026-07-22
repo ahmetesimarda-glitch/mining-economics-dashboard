@@ -129,6 +129,7 @@ Master Data UI/API live under `app/master-data/**` and `app/api/master-data/**`.
 14. **Exports**: **Excel** (`/api/projects/[id]/xlsx`) and **PDF** (`/api/projects/[id]/pdf`).
 15. **Internationalization**: full TR/EN switching via `lib/i18n`.
 16. **Master Data — Equipment Catalog** (`/master-data/equipment`, `/api/master-data/equipment`): commercial CRUD catalog with OEM-aware search, manufacturer/category/active filters, table/card views, detail drawer, facets endpoint, and snapshot Add-to-Project into the fleet.
+17. **Public Demo Experience**: first-visit welcome dialog, always-available **Copper Mine Demo** (`demo-copper-mine`), Demo badge, and browser localStorage for welcome dismissal / last opened / visitor-created project ids (auth-free).
 
 ---
 

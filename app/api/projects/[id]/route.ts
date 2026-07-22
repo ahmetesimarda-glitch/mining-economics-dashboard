@@ -8,6 +8,7 @@ import {
   calculateTotalOpex,
   type ProjectParams,
 } from '@/lib/calculations';
+import { isDemoProjectId } from '@/lib/demo/constants';
 
 const equipFieldMap = (eq: any) => ({
   machineType: eq?.machineType ?? '',
@@ -203,6 +204,12 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (isDemoProjectId(params?.id)) {
+      return NextResponse.json(
+        { error: 'Demo project cannot be deleted' },
+        { status: 403 }
+      );
+    }
     await prisma.miningProject.delete({ where: { id: params?.id } });
     return NextResponse.json({ success: true });
   } catch (error: any) {

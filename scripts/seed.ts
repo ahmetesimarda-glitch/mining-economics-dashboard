@@ -4,6 +4,7 @@ import {
   type ProjectParams,
 } from '../lib/calculations';
 import { seedEquipmentCatalogIdempotent } from '../lib/master-data';
+import { ensureCopperMineDemo } from '../lib/demo';
 
 const prisma = new PrismaClient();
 
@@ -1115,6 +1116,10 @@ async function seedDemoProject(proj: SeedProject): Promise<void> {
 
 async function main() {
   await seedEquipmentCatalog();
+  const demo = await ensureCopperMineDemo(prisma);
+  console.log(
+    `\u2705 Copper Mine Demo ${demo.created ? 'created' : 'updated'} (${demo.id})`
+  );
 
   for (const proj of PROJECTS) {
     await seedDemoProject(proj);

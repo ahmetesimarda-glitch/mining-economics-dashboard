@@ -51,7 +51,8 @@ The key architectural rule is that **business logic never imports Prisma or `nex
 - **`app/master-data/`** — Master Data page shells (Equipment Catalog first).
 - **`components/master-data/`** — reusable Master Data UI pieces (`EquipmentTable`, `EquipmentCardGrid`, `EquipmentFilters`, `EquipmentDetailDrawer`, `EquipmentDialog`, …).
 - **`prisma/`** — `schema.prisma` (single source of truth for the data model). See `DATABASE.md`.
-- **`scripts/`** — operational scripts: `seed.ts` and `safe-seed.ts` (idempotent seeding).
+- **`scripts/`** — operational scripts: `seed.ts` and `safe-seed.ts` (idempotent seeding, including Copper Mine Demo ensure).
+- **`lib/demo/`** — public demo experience helpers (constants, localStorage, Copper Mine Demo definition, ensure upsert).
 - **`hooks/`** — shared React hooks (e.g. `use-toast`).
 - **`types/`** — ambient/shared TypeScript type declarations.
 - **Root config** — `next.config.js` (Abacus/preview build), `next.config.github.js` (standalone/self-host build), `tailwind.config.ts`, `tsconfig.json`, `Dockerfile`, `docker-compose.yml`, `.env.example`.

@@ -19,6 +19,8 @@ import { ElasticityBarChart } from '@/app/components/charts/elasticity-bar-chart
 import { AIAnalysisPanel } from '@/app/components/ai-analysis-panel';
 import { formatMUSD, formatPercent, formatYear, formatNumber } from '@/lib/format';
 import { useLanguage } from '@/lib/i18n/context';
+import { DemoBadge } from '@/components/demo/DemoBadge';
+import { isDemoProjectId, setLastOpenedProjectId } from '@/lib/demo';
 import {
   DollarSign, TrendingUp, Clock, Target, Loader2, Edit, ArrowLeft,
   Mountain, BarChart3, PieChart, LineChart, Table as TableIcon, FileDown,
@@ -55,6 +57,10 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
   const [equipRenewalEnabled, setEquipRenewalEnabled] = useState(true);
   const [equipRenewalCycle, setEquipRenewalCycle] = useState(10);
   const [renewalSaving, setRenewalSaving] = useState(false);
+
+  useEffect(() => {
+    if (projectId) setLastOpenedProjectId(projectId);
+  }, [projectId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -299,7 +305,10 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                 <Mountain className="h-5 w-5" />
               </div>
               <div>
-                <h1 className="font-display text-2xl font-bold tracking-tight">{p?.name ?? t('card.project')}</h1>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="font-display text-2xl font-bold tracking-tight">{p?.name ?? t('card.project')}</h1>
+                  {isDemoProjectId(projectId) ? <DemoBadge /> : null}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {getMineTypeLabel(p?.mineType)} • {getMiningMethodLabel(p?.miningMethod)} {p?.location ? `• ${p.location}` : ''} • {p?.projectLifeYears ?? 30} {t('fmt.years')}
                   {(p?.oreGrade ?? 0) > 0 && ` • Tenör: ${p.oreGrade}${p?.oreGradeUnit ?? '%'}`}

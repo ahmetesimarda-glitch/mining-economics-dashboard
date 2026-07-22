@@ -411,6 +411,11 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
       if (res?.ok) {
         const data = await res?.json();
         toast.success(isEditing ? 'Proje güncellendi' : 'Proje oluşturuldu');
+        if (!isEditing && data?.id) {
+          const { trackCreatedProjectId, setLastOpenedProjectId } = await import('@/lib/demo');
+          trackCreatedProjectId(data.id);
+          setLastOpenedProjectId(data.id);
+        }
         router.push(`/projects/${data?.id ?? ''}`);
       } else {
         toast.error('Bir hata oluştu');
