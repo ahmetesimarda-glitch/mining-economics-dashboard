@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "deploy": {
+    "aptPackages": [
+      "chromium",
+      "ca-certificates",
+      "fonts-liberation",
+      "libnspr4",
+      "libnss3",
+      "libatk1.0-0",
+      "libatk-bridge2.0-0",
+      "libgbm1",
+      "libgtk-3-0",
+      "libx11-6",
+      "libx11-xcb1",
+      "libxcomposite1",
+      "libxdamage1",
+      "libxfixes3",
+      "libxrandr2",
+      "libcups2",
+      "libasound2",
+      "libdrm2",
+      "libxcursor1",
+      "libxi6",
+      "libxss1",
+      "libxtst6",
+      "libappindicator3-1",
+      "xdg-utils"
+    ],
+    "variables": {
+      "PUPPETEER_EXECUTABLE_PATH": "/usr/bin/chromium",
+      "PUPPETEER_SKIP_DOWNLOAD": "true",
+      "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
+    }
+  }
+}
