@@ -72,6 +72,7 @@ nextjs_space/
 │               ├── economic-sensitivity/route.ts
 │               ├── tornado/route.ts
 │               ├── montecarlo/route.ts
+│               ├── decision-insights/route.ts
 │               ├── environmental/route.ts
 │               ├── financing/route.ts
 │               ├── operational/route.ts
