@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from './header';
 import { ProjectCard } from './project-card';
+import type { DashboardCardProject } from './project-card';
 import { KPICard } from './kpi-card';
 import { formatMUSD, formatPercent } from '@/lib/format';
 import { Mountain, TrendingUp, DollarSign, BarChart3, PlusCircle, Loader2 } from 'lucide-react';
@@ -24,6 +25,12 @@ import {
 import { bootstrapAnalyticsSession } from '@/lib/analytics';
 import { toast } from 'sonner';
 import type { DemoEconomics } from '@/components/demo/DemoProjectCard';
+import {
+  computePortfolioMetrics,
+  readPortfolioSelection,
+  resolveInitialSelection,
+  writePortfolioSelection,
+} from '@/lib/dashboard/portfolio-selection';
 
 interface DashboardProject {
   id: string;
@@ -40,6 +47,9 @@ export function DashboardClient() {
   const [projects, setProjects] = useState<DashboardProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectionReady, setSelectionReady] = useState(false);
+  const [selectionInitialized, setSelectionInitialized] = useState(false);
 
   const fetchProjects = async () => {
     try {
@@ -68,18 +78,72 @@ export function DashboardClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const visible = projects ?? [];
+  const visibleIds = useMemo(
+    () => visible.map((p) => p?.id).filter((id): id is string => Boolean(id)),
+    [visible]
+  );
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (!selectionInitialized) {
+      const stored = readPortfolioSelection();
+      // Avoid persisting an empty "cleared" selection before projects arrive.
+      if (stored === null && visibleIds.length === 0) {
+        setSelectedIds([]);
+        setSelectionReady(true);
+        return;
+      }
+      const next = resolveInitialSelection(visibleIds, stored);
+      setSelectedIds(next);
+      writePortfolioSelection(next);
+      setSelectionInitialized(true);
+      setSelectionReady(true);
+      return;
+    }
+
+    setSelectedIds((prev) => {
+      const visible = new Set(visibleIds);
+      const next = prev.filter((id) => visible.has(id));
+      if (next.length !== prev.length) {
+        writePortfolioSelection(next);
+        return next;
+      }
+      return prev;
+    });
+  }, [loading, visibleIds, selectionInitialized]);
+
+  const persistSelection = (ids: string[]) => {
+    setSelectedIds(ids);
+    writePortfolioSelection(ids);
+  };
+
   const handleDelete = (id: string) => {
     untrackCreatedProjectId(id);
     setProjects((prev) => (prev ?? []).filter((p) => p?.id !== id));
+    persistSelection(selectedIds.filter((x) => x !== id));
   };
 
-  const handleDuplicate = (newProject: DashboardProject) => {
+  const handleDuplicate = (newProject: DashboardCardProject) => {
     if (newProject?.id) {
-      setProjects((prev) => filterDemoWorkspaceProjects([newProject, ...(prev ?? [])]));
+      const row: DashboardProject = {
+        id: newProject.id,
+        name: newProject.name,
+        npv: newProject.npv ?? undefined,
+        irr: newProject.irr ?? undefined,
+        totalCapex: newProject.totalCapex ?? undefined,
+        mineType: newProject.mineType,
+        miningMethod: newProject.miningMethod,
+        location: newProject.location,
+      };
+      setProjects((prev) => filterDemoWorkspaceProjects([row, ...(prev ?? [])]));
+      if (!selectedIds.includes(newProject.id)) {
+        persistSelection([newProject.id, ...selectedIds]);
+      }
     }
   };
 
-  const visible = projects ?? [];
   const userProjects = visible.filter((p) => !isDemoProjectId(p?.id));
   const demoProjects = visible.filter((p) => isDemoProjectId(p?.id));
 
@@ -93,16 +157,24 @@ export function DashboardClient() {
     return map;
   }, [demoProjects]);
 
-  const totalProjects = visible.length;
-  const avgNpv =
-    totalProjects > 0
-      ? visible.reduce((s, p) => s + (p?.npv ?? 0), 0) / totalProjects
-      : 0;
-  const avgIrr =
-    totalProjects > 0
-      ? visible.reduce((s, p) => s + (p?.irr ?? 0), 0) / totalProjects
-      : 0;
-  const totalCapex = visible.reduce((s, p) => s + (p?.totalCapex ?? 0), 0);
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+
+  const portfolioMetrics = useMemo(
+    () => computePortfolioMetrics(visible, selectedSet),
+    [visible, selectedSet]
+  );
+
+  const toggleProject = (id: string) => {
+    if (!id) return;
+    if (selectedSet.has(id)) {
+      persistSelection(selectedIds.filter((x) => x !== id));
+    } else {
+      persistSelection([...selectedIds, id]);
+    }
+  };
+
+  const selectAll = () => persistSelection([...visibleIds]);
+  const clearSelection = () => persistSelection([]);
 
   const dismissWelcome = () => {
     dismissWelcomePermanently();
@@ -112,7 +184,6 @@ export function DashboardClient() {
   const exploreDemo = () => {
     dismissWelcomePermanently();
     setWelcomeOpen(false);
-    // Prefer scrolling to the portfolio; fall back to flagship copper.
     requestAnimationFrame(() => {
       const el = document.getElementById('demo-portfolio');
       if (el) {
@@ -128,6 +199,8 @@ export function DashboardClient() {
     setWelcomeOpen(false);
     router.push('/projects/new');
   };
+
+  const selectedCount = selectionReady ? portfolioMetrics.totalProjects : 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -145,31 +218,55 @@ export function DashboardClient() {
           <p className="text-muted-foreground text-sm max-w-xl">{t('dash.subtitle')}</p>
         </motion.div>
 
+        <div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            {t('dash.statsBasedOn').replace('{count}', String(selectedCount))}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={selectAll}
+              disabled={loading || visibleIds.length === 0}
+              className="inline-flex items-center rounded-lg border border-border/60 px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
+            >
+              {t('dash.selectAll')}
+            </button>
+            <button
+              type="button"
+              onClick={clearSelection}
+              disabled={loading || selectedIds.length === 0}
+              className="inline-flex items-center rounded-lg border border-border/60 px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
+            >
+              {t('dash.clearSelection')}
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <KPICard
             title={t('dash.totalProjects')}
-            value={totalProjects}
+            value={portfolioMetrics.totalProjects}
             format={(v: number) => Math.round(v).toString()}
             icon={Mountain}
             color="text-primary"
           />
           <KPICard
             title={t('dash.avgNpv')}
-            value={avgNpv}
+            value={portfolioMetrics.averageNpv}
             format={(v: number) => formatMUSD(v)}
             icon={DollarSign}
             color="text-emerald-500"
           />
           <KPICard
             title={t('dash.avgIrr')}
-            value={avgIrr}
+            value={portfolioMetrics.averageIrr}
             format={(v: number) => formatPercent(v)}
             icon={TrendingUp}
             color="text-amber-500"
           />
           <KPICard
             title={t('dash.totalCapex')}
-            value={totalCapex}
+            value={portfolioMetrics.totalCapex}
             format={(v: number) => formatMUSD(v)}
             icon={BarChart3}
             color="text-blue-500"
@@ -181,7 +278,11 @@ export function DashboardClient() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <DemoPortfolio economicsById={economicsById} />
+          <DemoPortfolio
+            economicsById={economicsById}
+            selectedIds={selectedSet}
+            onToggleSelect={toggleProject}
+          />
         )}
 
         <MiningMarketInsights />
@@ -241,6 +342,8 @@ export function DashboardClient() {
                 index={i}
                 onDelete={handleDelete}
                 onDuplicate={handleDuplicate}
+                selected={Boolean(project?.id && selectedSet.has(project.id))}
+                onToggleSelect={toggleProject}
               />
             ))}
           </div>

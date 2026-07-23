@@ -17,6 +17,7 @@ import { SpiderSensitivityChart } from '@/app/components/charts/spider-sensitivi
 import { TwoWayHeatmap } from '@/app/components/charts/two-way-heatmap';
 import { ElasticityBarChart } from '@/app/components/charts/elasticity-bar-chart';
 import { AIAnalysisPanel } from '@/app/components/ai-analysis-panel';
+import { CountryIntelligencePanel } from '@/components/country-intelligence';
 import { formatMUSD, formatPercent, formatYear, formatNumber } from '@/lib/format';
 import { useLanguage } from '@/lib/i18n/context';
 import { translateParamLabel } from '@/lib/i18n/param-labels';
@@ -402,6 +403,10 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
           <KPICard title={t('op.unitCost')} value={m?.unitProductionCost ?? 0} format={(v: number) => `${v?.toFixed?.(2) ?? '0'} ${t('fmt.usdPerT')}`} icon={Gauge} color="text-cyan-500" description={t('fmt.opexPerTon')} />
           <KPICard title={t('op.reserveLife')} value={m?.reserveLife ?? 0} format={(v: number) => v > 0 ? formatYear(v) : t('fmt.na')} icon={Database} color="text-orange-500" description={t('op.reserveLife')} />
         </div>
+
+        {p?.countryCode ? (
+          <CountryIntelligencePanel countryCode={p.countryCode} className="mb-6" />
+        ) : null}
 
         {/* Tabs */}
         <div role="tablist" className="flex flex-wrap items-center gap-1 mb-6 p-1 rounded-lg bg-muted/50 overflow-x-auto">
