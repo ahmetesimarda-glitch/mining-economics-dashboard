@@ -144,6 +144,6 @@
 - Dependency diet (unused chart/map/auth packages)
 - Rate-limit / auth for analytics ingestion
 - Shared cache for market data across replicas
-- Hide or replace placeholder news feed
+- Hide or replace placeholder news feed → **done** (Mining Intelligence reference panel)
 
 **Demo tip:** Set language to **English** before the walkthrough; ensure Chromium env vars are set for PDF on the host; provision `ABACUSAI_API_KEY` only if AI tab will be shown.
