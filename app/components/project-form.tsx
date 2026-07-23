@@ -15,7 +15,7 @@ import {
   MINE_TYPES, MINING_METHODS, CURRENCIES, POWER_TYPES, EQUIPMENT_CATEGORIES,
   DEFAULT_EQUIPMENT_OPEN_PIT, DEFAULT_EQUIPMENT_UNDERGROUND,
   DEFAULT_PERSONNEL, OPEN_PIT_COSTS, UNDERGROUND_COSTS,
-  getCategoryFields, getCategoryLabel,
+  getCategoryFields,
 } from '@/lib/format';
 import { toast } from 'sonner';
 import {
@@ -112,6 +112,7 @@ function FormField({ label, name, value, onChange, type = 'number', suffix, icon
 
 export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
   const { t, locale } = useLanguage();
+  const numberLocale = locale === 'en' ? 'en-US' : 'tr-TR';
 
   const STEPS = [
     { id: 'general', label: t('form.step.general'), icon: Mountain },
@@ -575,7 +576,7 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (res?.ok) {
         const data = await res?.json();
-        toast.success(isEditing ? 'Proje güncellendi' : 'Proje oluşturuldu');
+        toast.success(isEditing ? t('form.updateSuccess') : t('form.createSuccess'));
         if (!isEditing && data?.id) {
           const { trackCreatedProjectId, setLastOpenedProjectId } = await import('@/lib/demo');
           trackCreatedProjectId(data.id);
@@ -584,11 +585,11 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
         }
         router.push(`/projects/${data?.id ?? ''}`);
       } else {
-        toast.error('Bir hata oluştu');
+        toast.error(t('form.saveFailed'));
       }
     } catch (err: any) {
       console.error(err);
-      toast.error('Sunucu hatası');
+      toast.error(t('form.serverError'));
     } finally {
       setSaving(false);
     }
@@ -699,7 +700,7 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                       {m.value === 'openPit' ? <Mountain className="h-5 w-5" /> : <Pickaxe className="h-5 w-5" />}
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">{m.label}</p>
+                      <p className="font-semibold text-sm">{m.value === 'openPit' ? t('method.openPit') : t('method.underground')}</p>
                       <p className="text-xs text-muted-foreground">
                         {m.value === 'openPit' ? t('form.methodOpenPitHint') : t('form.methodUndergroundHint')}
                       </p>
@@ -740,15 +741,15 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
             {/* Reserves & Capacity */}
             <div>
               <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <Database className="h-4 w-4 text-primary" /> Rezerv & Kapasite
+                <Database className="h-4 w-4 text-primary" /> {t('form.reserveCapacityTitle')}
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField label="Toplam Rezerv" name="totalReserves" value={form?.totalReserves} onChange={handleChange} suffix="Mt" icon={Database} />
-                <FormField label="Maks. Yıllık Kapasite" name="maxAnnualCapacity" value={form?.maxAnnualCapacity} onChange={handleChange} suffix="Mt/yıl" />
+                <FormField label={t('form.totalReserve')} name="totalReserves" value={form?.totalReserves} onChange={handleChange} suffix="Mt" icon={Database} />
+                <FormField label={t('form.maxAnnualCapacity')} name="maxAnnualCapacity" value={form?.maxAnnualCapacity} onChange={handleChange} suffix={t('fmt.mtPerYear')} />
                 <div className="grid grid-cols-2 gap-2">
                   <FormField label={t('form.oreGrade')} name="oreGrade" value={form?.oreGrade} onChange={handleChange} suffix={form?.oreGradeUnit ?? '%'} />
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Tenör Birimi</label>
+                    <label className="text-xs font-medium text-muted-foreground">{t('form.oreGradeUnit')}</label>
                     <select name="oreGradeUnit" value={form?.oreGradeUnit ?? '%'} onChange={handleChange}
                       className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
                       <option value="%">%</option>
@@ -762,24 +763,24 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
             {/* Currency & Energy Costs */}
             <div>
               <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-primary" /> Döviz & Enerji Birim Fiyatları
+                <DollarSign className="h-4 w-4 text-primary" /> {t('form.currencyEnergyTitle')}
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
                   <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                    <DollarSign className="h-3.5 w-3.5" /> Para Birimi
+                    <DollarSign className="h-3.5 w-3.5" /> {t('form.currency')}
                   </label>
                   <select name="currency" value={form?.currency ?? 'USD'} onChange={handleChange}
                     className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
                     {CURRENCIES.map((c: any) => (<option key={c.value} value={c.value}>{c.label}</option>))}
                   </select>
                 </div>
-                <FormField label="Döviz Kuru (1 USD =)" name="exchangeRate" value={form?.exchangeRate} onChange={handleChange} suffix={form?.currency !== 'USD' ? form?.currency : 'TRY'} icon={DollarSign} />
-                <FormField label="Yakıt Fiyatı" name="fuelPricePerLiter" value={form?.fuelPricePerLiter} onChange={handleChange} suffix="USD/lt" icon={Fuel} />
-                <FormField label="Elektrik Birim Fiyatı" name="electricityUnitPrice" value={form?.electricityUnitPrice} onChange={handleChange} suffix="USD/kWh" icon={Zap} />
+                <FormField label={t('form.exchangeRatePerUsd')} name="exchangeRate" value={form?.exchangeRate} onChange={handleChange} suffix={form?.currency !== 'USD' ? form?.currency : 'TRY'} icon={DollarSign} />
+                <FormField label={t('form.fuelPriceUsd')} name="fuelPricePerLiter" value={form?.fuelPricePerLiter} onChange={handleChange} suffix={t('fmt.usdPerLt')} icon={Fuel} />
+                <FormField label={t('form.electricityPrice')} name="electricityUnitPrice" value={form?.electricityUnitPrice} onChange={handleChange} suffix={t('fmt.usdPerKwh')} icon={Zap} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <FormField label="Patlayıcı Birim Maliyeti" name="explosiveUnitPrice" value={form?.explosiveUnitPrice} onChange={handleChange} suffix="USD/kg" icon={Bomb} />
+                <FormField label={t('form.explosiveCost')} name="explosiveUnitPrice" value={form?.explosiveUnitPrice} onChange={handleChange} suffix={t('fmt.usdPerKg')} icon={Bomb} />
               </div>
             </div>
           </div>
@@ -790,10 +791,10 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium flex items-center gap-2">
-                <Truck className="h-4 w-4 text-primary" /> Makine ve Ekipmanlar
+                <Truck className="h-4 w-4 text-primary" /> {t('form.equipListTitle')}
               </h4>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground">Toplam: <strong className="text-foreground font-mono">{(totalEquipmentCost / 1_000_000).toFixed(3)} MUSD</strong></span>
+                <span className="text-xs text-muted-foreground">{t('form.total')}: <strong className="text-foreground font-mono">{(totalEquipmentCost / 1_000_000).toFixed(3)} {t('fmt.musd')}</strong></span>
                 <button
                   type="button"
                   onClick={() => void openCatalogPicker()}
@@ -802,11 +803,11 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                   <Database className="h-3 w-3" /> {t('equipCat.addFromCatalog')}
                 </button>
                 <button type="button" onClick={addEquipment} className="flex items-center gap-1 text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90">
-                  <Plus className="h-3 w-3" /> Makine Ekle
+                  <Plus className="h-3 w-3" /> {t('form.addMachine')}
                 </button>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">Her makine için teknik detayları genişlet butonuyla girebilirsiniz.</p>
+            <p className="text-xs text-muted-foreground">{t('form.equipHint')}</p>
             <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
               {equipments.map((eq: any, i: number) => {
                 const isExpanded = expandedEquip === i;
@@ -819,7 +820,7 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium text-primary flex items-center gap-1">
                             <Truck className="h-3 w-3" />
-                            {getCategoryLabel(eq?.equipmentCategory)}
+                            {t(`eqcat.${eq?.equipmentCategory ?? 'general'}`)}
                           </span>
                           <span className="text-[10px] text-muted-foreground">#{i + 1}</span>
                         </div>
@@ -827,7 +828,7 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                           <button type="button" onClick={() => setExpandedEquip(isExpanded ? null : i)}
                             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-accent">
                             {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                            {isExpanded ? 'Kapat' : 'Detay'}
+                            {isExpanded ? t('form.collapse') : t('form.detail')}
                           </button>
                           <button type="button" onClick={() => removeEquipment(i)} className="text-muted-foreground hover:text-destructive p-1">
                             <Trash2 className="h-3.5 w-3.5" />
@@ -837,30 +838,30 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                       {/* Basic fields */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                         <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">Kategori</label>
+                          <label className="text-xs text-muted-foreground">{t('form.equipCategory')}</label>
                           <select value={eq?.equipmentCategory ?? 'general'}
                             onChange={(e) => updateEquipment(i, 'equipmentCategory', e.target.value)}
                             className="w-full rounded-lg border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
-                            {EQUIPMENT_CATEGORIES.map((c: any) => (<option key={c.value} value={c.value}>{c.label}</option>))}
+                            {EQUIPMENT_CATEGORIES.map((c: any) => (<option key={c.value} value={c.value}>{t(`eqcat.${c.value}`)}</option>))}
                           </select>
                         </div>
                         <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">Makine Tipi</label>
+                          <label className="text-xs text-muted-foreground">{t('form.machineType')}</label>
                           <input type="text" value={eq?.machineType ?? ''} onChange={(e) => updateEquipment(i, 'machineType', e.target.value)}
                             className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">Model</label>
+                          <label className="text-xs text-muted-foreground">{t('form.model')}</label>
                           <input type="text" value={eq?.model ?? ''} onChange={(e) => updateEquipment(i, 'model', e.target.value)}
-                            className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="Örn: CAT 390F" />
+                            className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder={t('form.modelPlaceholder')} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">Adet</label>
+                          <label className="text-xs text-muted-foreground">{t('form.quantity')}</label>
                           <input type="number" value={eq?.quantity ?? ''} onChange={(e) => updateEquipment(i, 'quantity', parseIntegerInput(e.target.value))}
                             className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">Birim Fiyat (USD)</label>
+                          <label className="text-xs text-muted-foreground">{t('form.unitCostUsd')}</label>
                           <input type="number" step="any" value={eq?.unitCost ?? ''} onChange={(e) => updateEquipment(i, 'unitCost', parseNumericInput(e.target.value))}
                             className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                         </div>
@@ -873,68 +874,68 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                           className="border-t border-border/30 bg-muted/20 px-4 py-3 space-y-3">
                           {/* Common detailed fields */}
-                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Teknik Parametreler</p>
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{t('form.techParams')}</p>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground">Günlük Çalışma</label>
+                              <label className="text-xs text-muted-foreground">{t('form.dailyWorkShort')}</label>
                               <div className="relative">
                                 <input type="number" step="any" value={eq?.dailyWorkHours ?? ''} onChange={(e) => updateEquipment(i, 'dailyWorkHours', parseNumericInput(e.target.value))}
                                   className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">saat</span>
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{t('form.hours')}</span>
                               </div>
                             </div>
                             <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground">Operatör İhtiyacı</label>
+                              <label className="text-xs text-muted-foreground">{t('form.operatorNeed')}</label>
                               <input type="number" value={eq?.operatorCount ?? ''} onChange={(e) => updateEquipment(i, 'operatorCount', parseIntegerInput(e.target.value))}
                                 className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground">Güç Tipi</label>
+                              <label className="text-xs text-muted-foreground">{t('form.powerType')}</label>
                               <select value={eq?.powerType ?? 'diesel'}
                                 onChange={(e) => updateEquipment(i, 'powerType', e.target.value)}
                                 className="w-full rounded-lg border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
-                                {POWER_TYPES.map((p: any) => (<option key={p.value} value={p.value}>{p.label}</option>))}
+                                {POWER_TYPES.map((p: any) => (<option key={p.value} value={p.value}>{t(`power.${p.value}`)}</option>))}
                               </select>
                             </div>
                             <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground">Bakım Periyodu</label>
+                              <label className="text-xs text-muted-foreground">{t('form.maintPeriodShort')}</label>
                               <div className="relative">
                                 <input type="number" value={eq?.maintenancePeriodHours ?? ''} onChange={(e) => updateEquipment(i, 'maintenancePeriodHours', parseIntegerInput(e.target.value))}
                                   className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">saat</span>
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{t('form.hours')}</span>
                               </div>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground">Saatlik Yakıt Tüketimi</label>
+                              <label className="text-xs text-muted-foreground">{t('form.hourlyFuelShort')}</label>
                               <div className="relative">
                                 <input type="number" step="any" value={eq?.hourlyFuelConsumption ?? ''} onChange={(e) => updateEquipment(i, 'hourlyFuelConsumption', parseNumericInput(e.target.value))}
                                   className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">lt/sa</span>
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{t('form.ltPerHour')}</span>
                               </div>
                             </div>
                             <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground">Bakım Gideri (USD/yıl)</label>
+                              <label className="text-xs text-muted-foreground">{t('form.maintenanceCostYear')}</label>
                               <input type="number" step="any" value={eq?.maintenanceCost ?? ''} onChange={(e) => updateEquipment(i, 'maintenanceCost', parseNumericInput(e.target.value))}
                                 className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground">Yedek Adet</label>
+                              <label className="text-xs text-muted-foreground">{t('form.spareQty')}</label>
                               <input type="number" value={eq?.spareQuantity ?? ''} onChange={(e) => updateEquipment(i, 'spareQuantity', parseIntegerInput(e.target.value))}
                                 className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground">Tonaj/Kapasite</label>
+                              <label className="text-xs text-muted-foreground">{t('form.tonnageCapacity')}</label>
                               <input type="text" value={eq?.tonnageCapacity ?? ''} onChange={(e) => updateEquipment(i, 'tonnageCapacity', e.target.value)}
-                                className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="Örn: 90 ton" />
+                                className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder={t('form.tonnagePlaceholder')} />
                             </div>
                           </div>
                           {/* Category-specific fields */}
                           {catFields.length > 0 && (
                             <>
                               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-2">
-                                {getCategoryLabel(eq?.equipmentCategory)} Özel Parametreler
+                                {t(`eqcat.${eq?.equipmentCategory ?? 'general'}`)} {t('form.categorySpecificParams')}
                               </p>
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 {catFields.map((f: any) => (
@@ -943,7 +944,7 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                                     <div className="relative">
                                       {f.key === 'gallerySuitability' ? (
                                         <input type="text" value={eq?.[f.key] ?? ''} onChange={(e) => updateEquipment(i, f.key, e.target.value)}
-                                          className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="Örn: 4x4m" />
+                                          className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder={t('form.galleryPlaceholder')} />
                                       ) : (
                                         <input type="number" step="any" value={eq?.[f.key] ?? ''} onChange={(e) => updateEquipment(i, f.key, parseNumericInput(e.target.value))}
                                           className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
@@ -959,9 +960,9 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                           {(toNumber(eq?.hourlyFuelConsumption, 0) > 0) && (toNumber(form?.fuelPricePerLiter, 0) > 0) && (
                             <div className="p-2 rounded bg-amber-500/5 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-400">
                               <Fuel className="inline h-3 w-3 mr-1" />
-                              Günlük: {(toNumber(eq?.hourlyFuelConsumption, 0) * toNumber(eq?.dailyWorkHours, 8) * toNumber(eq?.quantity, 1)).toFixed(0)} lt | 
-                              Aylık: {(toNumber(eq?.hourlyFuelConsumption, 0) * toNumber(eq?.dailyWorkHours, 8) * toNumber(eq?.quantity, 1) * 30).toFixed(0)} lt | 
-                              Yıllık Maliyet: {(toNumber(eq?.hourlyFuelConsumption, 0) * toNumber(eq?.dailyWorkHours, 8) * 365 * toNumber(eq?.quantity, 1) * toNumber(form?.fuelPricePerLiter, 0)).toLocaleString('tr-TR', {maximumFractionDigits: 0})} USD
+                              {t('form.fuelDaily')}: {(toNumber(eq?.hourlyFuelConsumption, 0) * toNumber(eq?.dailyWorkHours, 8) * toNumber(eq?.quantity, 1)).toFixed(0)} lt | 
+                              {t('form.fuelMonthly')}: {(toNumber(eq?.hourlyFuelConsumption, 0) * toNumber(eq?.dailyWorkHours, 8) * toNumber(eq?.quantity, 1) * 30).toFixed(0)} lt | 
+                              {t('form.fuelAnnualCost')}: {(toNumber(eq?.hourlyFuelConsumption, 0) * toNumber(eq?.dailyWorkHours, 8) * 365 * toNumber(eq?.quantity, 1) * toNumber(form?.fuelPricePerLiter, 0)).toLocaleString(numberLocale, {maximumFractionDigits: 0})} {t('fmt.usd')}
                             </div>
                           )}
                         </motion.div>
@@ -970,8 +971,8 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
 
                     {/* Footer summary */}
                     <div className="px-4 py-2 border-t border-border/20 flex justify-between items-center text-xs text-muted-foreground bg-card/30">
-                      <span>{eq?.machineType || 'Tanımsız'} • {toNumber(eq?.quantity, 1)} adet</span>
-                      <span className="font-mono font-medium text-foreground">{((toNumber(eq?.quantity, 1) + toNumber(eq?.spareQuantity, 0)) * toNumber(eq?.unitCost, 0)).toLocaleString('tr-TR')} USD</span>
+                      <span>{eq?.machineType || t('form.undefined')} • {toNumber(eq?.quantity, 1)} {t('form.units')}</span>
+                      <span className="font-mono font-medium text-foreground">{((toNumber(eq?.quantity, 1) + toNumber(eq?.spareQuantity, 0)) * toNumber(eq?.unitCost, 0)).toLocaleString(numberLocale)} {t('fmt.usd')}</span>
                     </div>
                   </div>
                 );
@@ -985,12 +986,12 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" /> Personel Yönetimi
+                <Users className="h-4 w-4 text-primary" /> {t('form.personnelManageTitle')}
               </h4>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground">Yıllık Toplam: <strong className="text-foreground font-mono">{(totalPersonnelCost / 1_000_000).toFixed(3)} MUSD</strong></span>
+                <span className="text-xs text-muted-foreground">{t('form.annualTotal')}: <strong className="text-foreground font-mono">{(totalPersonnelCost / 1_000_000).toFixed(3)} {t('fmt.musd')}</strong></span>
                 <button type="button" onClick={addPersonnel} className="flex items-center gap-1 text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90">
-                  <Plus className="h-3 w-3" /> Pozisyon Ekle
+                  <Plus className="h-3 w-3" /> {t('form.addPosition')}
                 </button>
               </div>
             </div>
@@ -998,22 +999,22 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
               {personnels.map((p: any, i: number) => (
                 <div key={i} className="rounded-lg border border-border/50 p-3 bg-card/50 flex flex-wrap items-end gap-3">
                   <div className="space-y-1 flex-1 min-w-[150px]">
-                    <label className="text-xs text-muted-foreground">Görev / Pozisyon</label>
+                    <label className="text-xs text-muted-foreground">{t('form.personnelRoleShort')}</label>
                     <input type="text" value={p?.role ?? ''} onChange={(e) => updatePersonnel(i, 'role', e.target.value)}
                       className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
                   <div className="space-y-1 w-20">
-                    <label className="text-xs text-muted-foreground">Kişi</label>
+                    <label className="text-xs text-muted-foreground">{t('form.personnelCountShort')}</label>
                     <input type="number" value={p?.count ?? ''} onChange={(e) => updatePersonnel(i, 'count', parseIntegerInput(e.target.value))}
                       className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
                   <div className="space-y-1 w-36">
-                    <label className="text-xs text-muted-foreground">Aylık Maaş (USD)</label>
+                    <label className="text-xs text-muted-foreground">{t('form.monthlySalary')}</label>
                     <input type="number" step="any" value={p?.monthlySalary ?? ''} onChange={(e) => updatePersonnel(i, 'monthlySalary', parseNumericInput(e.target.value))}
                       className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
                   <div className="text-xs text-muted-foreground pb-1.5">
-                    Yıllık: <strong className="text-foreground font-mono">{(toNumber(p?.count, 1) * toNumber(p?.monthlySalary, 0) * 12).toLocaleString('tr-TR')} USD</strong>
+                    {t('form.annual')}: <strong className="text-foreground font-mono">{(toNumber(p?.count, 1) * toNumber(p?.monthlySalary, 0) * 12).toLocaleString(numberLocale)} {t('fmt.usd')}</strong>
                   </div>
                   <button type="button" onClick={() => removePersonnel(i)} className="text-muted-foreground hover:text-destructive pb-1.5">
                     <Trash2 className="h-3.5 w-3.5" />
@@ -1028,23 +1029,23 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
         return (
           <div className="space-y-6">
             <div>
-              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><Factory className="h-4 w-4 text-primary" /> Sabit Yatırım Kalemleri (MUSD)</h4>
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><Factory className="h-4 w-4 text-primary" /> {t('form.capexFixedTitle')}</h4>
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 mb-4">
-                <p className="text-xs text-muted-foreground">Makine-Ekipman maliyeti otomatik hesaplanır: <strong className="text-foreground">{(totalEquipmentCost / 1_000_000).toFixed(3)} MUSD</strong></p>
+                <p className="text-xs text-muted-foreground">{t('form.equipCostAuto')}: <strong className="text-foreground">{(totalEquipmentCost / 1_000_000).toFixed(3)} {t('fmt.musd')}</strong></p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField label="Tesis" name="facilityCost" value={form?.facilityCost} onChange={handleChange} suffix="MUSD" />
-                <FormField label="Altyapı" name="infrastructureCost" value={form?.infrastructureCost} onChange={handleChange} suffix="MUSD" />
-                <FormField label="Öngörülemeyen Oranı" name="contingencyRate" value={form?.contingencyRate} onChange={handleChange} suffix="%" />
+                <FormField label={t('form.facilityCost')} name="facilityCost" value={form?.facilityCost} onChange={handleChange} suffix={t('fmt.musd')} />
+                <FormField label={t('form.infrastructureCapex')} name="infrastructureCost" value={form?.infrastructureCost} onChange={handleChange} suffix={t('fmt.musd')} />
+                <FormField label={t('form.contingencyRate')} name="contingencyRate" value={form?.contingencyRate} onChange={handleChange} suffix="%" />
               </div>
             </div>
             {/* Amortisman ayarları Finansal sekmesine taşındı */}
             <div>
-              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><TreePine className="h-4 w-4 text-primary" /> Diğer Yatırım Giderleri (MUSD)</h4>
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><TreePine className="h-4 w-4 text-primary" /> {t('form.otherInvestTitle')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField label="Orman İzin" name="forestCost" value={form?.forestCost} onChange={handleChange} suffix="MUSD" icon={TreePine} />
-                <FormField label="Kamulaştırma" name="landCost" value={form?.landCost} onChange={handleChange} suffix="MUSD" />
-                <FormField label="Rehabilitasyon" name="rehabilitationCost" value={form?.rehabilitationCost} onChange={handleChange} suffix="MUSD" />
+                <FormField label={t('form.forestCost')} name="forestCost" value={form?.forestCost} onChange={handleChange} suffix={t('fmt.musd')} icon={TreePine} />
+                <FormField label={t('form.landCost')} name="landCost" value={form?.landCost} onChange={handleChange} suffix={t('fmt.musd')} />
+                <FormField label={t('form.rehabCapex')} name="rehabilitationCost" value={form?.rehabilitationCost} onChange={handleChange} suffix={t('fmt.musd')} />
               </div>
             </div>
           </div>
@@ -1053,28 +1054,28 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
       case 4: // OPEX
         return (
           <div className="space-y-6">
-            <h4 className="text-sm font-medium mb-1 flex items-center gap-2"><Settings className="h-4 w-4 text-primary" /> Yıllık İşletme Giderleri (MUSD/Yıl)</h4>
+            <h4 className="text-sm font-medium mb-1 flex items-center gap-2"><Settings className="h-4 w-4 text-primary" /> {t('form.opexAnnualTitle')}</h4>
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
               <p className="text-xs text-muted-foreground">
-                Personel: <strong className="text-foreground">{(totalPersonnelCost / 1_000_000).toFixed(3)} MUSD</strong> | 
-                Ekipman yakıt: <strong className="text-foreground">{(totalFuelFromEquip / 1_000_000).toFixed(3)} MUSD</strong> | 
-                Ekipman bakım: <strong className="text-foreground">{(totalMaintFromEquip / 1_000_000).toFixed(3)} MUSD</strong>
+                {t('form.opexAutoPersonnel')}: <strong className="text-foreground">{(totalPersonnelCost / 1_000_000).toFixed(3)} {t('fmt.musd')}</strong> | 
+                {t('form.opexAutoFuel')}: <strong className="text-foreground">{(totalFuelFromEquip / 1_000_000).toFixed(3)} {t('fmt.musd')}</strong> | 
+                {t('form.opexAutoMaint')}: <strong className="text-foreground">{(totalMaintFromEquip / 1_000_000).toFixed(3)} {t('fmt.musd')}</strong>
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <FormField label="Ek Yakıt Giderleri" name="fuelCost" value={form?.fuelCost} onChange={handleChange} suffix="MUSD" icon={Fuel} />
-              <FormField label="Ek Bakım-Onarım" name="maintenanceCost" value={form?.maintenanceCost} onChange={handleChange} suffix="MUSD" icon={Wrench} />
-              <FormField label="Patlayıcı Madde" name="explosivesCost" value={form?.explosivesCost} onChange={handleChange} suffix="MUSD" icon={Bomb} />
-              <FormField label="Lastik Giderleri" name="tireCost" value={form?.tireCost} onChange={handleChange} suffix="MUSD" icon={CircleDot} />
-              <FormField label="Diğer OPEX" name="otherOpex" value={form?.otherOpex} onChange={handleChange} suffix="MUSD" />
+              <FormField label={t('form.fuelCost')} name="fuelCost" value={form?.fuelCost} onChange={handleChange} suffix={t('fmt.musd')} icon={Fuel} />
+              <FormField label={t('form.maintenanceCost')} name="maintenanceCost" value={form?.maintenanceCost} onChange={handleChange} suffix={t('fmt.musd')} icon={Wrench} />
+              <FormField label={t('form.explosivesCost')} name="explosivesCost" value={form?.explosivesCost} onChange={handleChange} suffix={t('fmt.musd')} icon={Bomb} />
+              <FormField label={t('form.tireCost')} name="tireCost" value={form?.tireCost} onChange={handleChange} suffix={t('fmt.musd')} icon={CircleDot} />
+              <FormField label={t('form.otherOpex')} name="otherOpex" value={form?.otherOpex} onChange={handleChange} suffix={t('fmt.musd')} />
             </div>
             <div>
-              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">Dekapaj ve Tesis</h4>
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">{t('form.strippingPlantTitle')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <FormField label="Dekapaj Hacmi (Yıllık)" name="annualStrippingVolume" value={form?.annualStrippingVolume} onChange={handleChange} suffix="Mm³" />
-                <FormField label="Dekapaj Birim Maliyet" name="strippingUnitCost" value={form?.strippingUnitCost} onChange={handleChange} suffix="USD/m³" />
-                <FormField label="Yüklenici Dekapaj" name="contractorStrippingCost" value={form?.contractorStrippingCost} onChange={handleChange} suffix="MUSD" />
-                <FormField label="Tesis İşletme" name="plantOperatingCost" value={form?.plantOperatingCost} onChange={handleChange} suffix="MUSD" />
+                <FormField label={t('form.annualStrippingVolume')} name="annualStrippingVolume" value={form?.annualStrippingVolume} onChange={handleChange} suffix={t('fmt.mm3')} />
+                <FormField label={t('form.strippingUnitCost')} name="strippingUnitCost" value={form?.strippingUnitCost} onChange={handleChange} suffix={t('fmt.usdPerM3')} />
+                <FormField label={t('form.contractorStrippingCost')} name="contractorStrippingCost" value={form?.contractorStrippingCost} onChange={handleChange} suffix={t('fmt.musd')} />
+                <FormField label={t('form.plantOperatingCost')} name="plantOperatingCost" value={form?.plantOperatingCost} onChange={handleChange} suffix={t('fmt.musd')} />
               </div>
             </div>
           </div>
@@ -1086,12 +1087,12 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium flex items-center gap-2">
                 <Pickaxe className="h-4 w-4 text-primary" />
-                {form?.miningMethod === 'openPit' ? 'Açık Ocak' : 'Yer Altı'} Özel Maliyetler
+                {form?.miningMethod === 'openPit' ? t('method.openPit') : t('method.underground')} {t('form.methodSpecificCosts')}
               </h4>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground">Toplam: <strong className="text-foreground font-mono">{totalMethodCost.toFixed(3)} MUSD</strong></span>
+                <span className="text-xs text-muted-foreground">{t('form.total')}: <strong className="text-foreground font-mono">{totalMethodCost.toFixed(3)} {t('fmt.musd')}</strong></span>
                 <button type="button" onClick={addMethodCost} className="flex items-center gap-1 text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90">
-                  <Plus className="h-3 w-3" /> Maliyet Ekle
+                  <Plus className="h-3 w-3" /> {t('form.addMethodCost')}
                 </button>
               </div>
             </div>
@@ -1099,13 +1100,13 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
               {methodCosts.map((c: any, i: number) => (
                 <div key={i} className="rounded-lg border border-border/50 p-3 bg-card/50 flex items-end gap-3">
                   <div className="space-y-1 flex-1 min-w-[150px]">
-                    <label className="text-xs text-muted-foreground">Maliyet Kalemi</label>
+                    <label className="text-xs text-muted-foreground">{t('form.costItemName')}</label>
                     <input type="text" value={c?.name ?? ''}
                       onChange={(e) => { const next = [...methodCosts]; next[i] = { ...next[i], name: e.target.value }; setMethodCosts(next); }}
                       className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
                   <div className="space-y-1 w-36">
-                    <label className="text-xs text-muted-foreground">Tutar (MUSD)</label>
+                    <label className="text-xs text-muted-foreground">{t('form.amountMusd')}</label>
                     <input type="number" step="any" value={c?.value ?? ''}
                       onChange={(e) => updateMethodCost(i, parseNumericInput(e.target.value))}
                       className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
@@ -1124,56 +1125,56 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
           <div className="space-y-6">
             <div>
               <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-primary" /> Ana Cevher Geliri
+                <DollarSign className="h-4 w-4 text-primary" /> {t('form.mainOreRevenue')}
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField label="Birim Satış Fiyatı" name="unitPrice" value={form?.unitPrice} onChange={handleChange} suffix="USD/ton" icon={DollarSign} />
-                <FormField label="Yıllık Üretim" name="annualProduction" value={form?.annualProduction} onChange={handleChange} suffix="Mt" />
-                <FormField label="Tesiste İşleme Oranı" name="plantProcessingRate" value={form?.plantProcessingRate} onChange={handleChange} suffix="%" />
+                <FormField label={t('form.unitSalePrice')} name="unitPrice" value={form?.unitPrice} onChange={handleChange} suffix={t('fmt.usdPerTon')} icon={DollarSign} />
+                <FormField label={t('form.annualProduction')} name="annualProduction" value={form?.annualProduction} onChange={handleChange} suffix="Mt" />
+                <FormField label={t('form.plantProcessingRate')} name="plantProcessingRate" value={form?.plantProcessingRate} onChange={handleChange} suffix="%" />
               </div>
             </div>
             {/* By-products */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium flex items-center gap-2">
-                  <Gem className="h-4 w-4 text-primary" /> Yan Ürünler
+                  <Gem className="h-4 w-4 text-primary" /> {t('form.byProductsTitle')}
                 </h4>
                 <div className="flex items-center gap-3">
                   {byProducts.length > 0 && (
-                    <span className="text-xs text-muted-foreground">Yıllık: <strong className="text-foreground font-mono">{totalByProductRevenue.toLocaleString('tr-TR')} USD</strong></span>
+                    <span className="text-xs text-muted-foreground">{t('form.annual')}: <strong className="text-foreground font-mono">{totalByProductRevenue.toLocaleString(numberLocale)} {t('fmt.usd')}</strong></span>
                   )}
                   <button type="button" onClick={addByProduct} className="flex items-center gap-1 text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90">
-                    <Plus className="h-3 w-3" /> Yan Ürün Ekle
+                    <Plus className="h-3 w-3" /> {t('form.addByProduct')}
                   </button>
                 </div>
               </div>
               {byProducts.length === 0 ? (
                 <div className="text-center py-6 rounded-lg border border-dashed border-border/50">
                   <Gem className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground">Henüz yan ürün eklenmedi</p>
+                  <p className="text-xs text-muted-foreground">{t('form.byProductEmpty')}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {byProducts.map((bp: any, i: number) => (
                     <div key={i} className="rounded-lg border border-border/50 p-3 bg-card/50 flex flex-wrap items-end gap-3">
                       <div className="space-y-1 flex-1 min-w-[120px]">
-                        <label className="text-xs text-muted-foreground">Ürün Adı</label>
+                        <label className="text-xs text-muted-foreground">{t('form.byProductName')}</label>
                         <input type="text" value={bp?.name ?? ''} onChange={(e) => updateByProduct(i, 'name', e.target.value)}
-                          placeholder="Örn: Gümüş"
+                          placeholder={t('form.byProductNamePlaceholder')}
                           className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                       </div>
                       <div className="space-y-1 w-32">
-                        <label className="text-xs text-muted-foreground">Üretim (ton/yıl)</label>
+                        <label className="text-xs text-muted-foreground">{t('form.byProductProduction')}</label>
                         <input type="number" step="any" value={bp?.annualProduction ?? ''} onChange={(e) => updateByProduct(i, 'annualProduction', parseNumericInput(e.target.value))}
                           className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                       </div>
                       <div className="space-y-1 w-32">
-                        <label className="text-xs text-muted-foreground">Fiyat (USD/ton)</label>
+                        <label className="text-xs text-muted-foreground">{t('form.byProductPrice')}</label>
                         <input type="number" step="any" value={bp?.unitPrice ?? ''} onChange={(e) => updateByProduct(i, 'unitPrice', parseNumericInput(e.target.value))}
                           className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30" />
                       </div>
                       <div className="text-xs text-muted-foreground pb-1.5">
-                        Gelir: <strong className="text-foreground font-mono">{(toNumber(bp?.annualProduction, 0) * toNumber(bp?.unitPrice, 0)).toLocaleString('tr-TR')} USD/yıl</strong>
+                        {t('form.revenue')}: <strong className="text-foreground font-mono">{(toNumber(bp?.annualProduction, 0) * toNumber(bp?.unitPrice, 0)).toLocaleString(numberLocale)} {t('fmt.usdPerYear')}</strong>
                       </div>
                       <button type="button" onClick={() => removeByProduct(i)} className="text-muted-foreground hover:text-destructive pb-1.5">
                         <Trash2 className="h-3.5 w-3.5" />
@@ -1190,52 +1191,52 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
         return (
           <div className="space-y-6">
             <div>
-              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><Calculator className="h-4 w-4 text-primary" /> Vergi & İndirgenme</h4>
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><Calculator className="h-4 w-4 text-primary" /> {t('form.taxDiscountTitle')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField label="İndirgenme Oranı" name="discountRate" value={form?.discountRate} onChange={handleChange} suffix="%" icon={Calculator} />
-                <FormField label="Kurumlar Vergisi" name="taxRate" value={form?.taxRate} onChange={handleChange} suffix="%" />
-                <FormField label="Devlet Hakkı" name="royaltyRate" value={form?.royaltyRate} onChange={handleChange} suffix="%" />
+                <FormField label={t('form.discountRate')} name="discountRate" value={form?.discountRate} onChange={handleChange} suffix="%" icon={Calculator} />
+                <FormField label={t('form.corporateTax')} name="taxRate" value={form?.taxRate} onChange={handleChange} suffix="%" />
+                <FormField label={t('form.stateRoyalty')} name="royaltyRate" value={form?.royaltyRate} onChange={handleChange} suffix="%" />
               </div>
             </div>
             <div>
-              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><CreditCard className="h-4 w-4 text-primary" /> Finansman & Kredi</h4>
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><CreditCard className="h-4 w-4 text-primary" /> {t('form.financingTitle')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField label="Kredi Faiz Oranı" name="creditRate" value={form?.creditRate} onChange={handleChange} suffix="%" icon={CreditCard} />
-                <FormField label="Kredi Geri Ödeme Süresi" name="creditYears" value={form?.creditYears} onChange={handleChange} suffix="yıl" />
-                <FormField label="Kredi Tutarı" name="loanAmount" value={form?.loanAmount} onChange={handleChange} suffix="MUSD" />
-                <FormField label="Kredi Faiz Oranı (Detay)" name="loanInterestRate" value={form?.loanInterestRate} onChange={handleChange} suffix="%" />
-                <FormField label="Kredi Vadesi" name="loanTermYears" value={form?.loanTermYears} onChange={handleChange} suffix="yıl" />
-                <FormField label="Öz Sermaye Oranı" name="equityRatio" value={form?.equityRatio} onChange={handleChange} suffix="%" />
+                <FormField label={t('form.creditRate')} name="creditRate" value={form?.creditRate} onChange={handleChange} suffix="%" icon={CreditCard} />
+                <FormField label={t('form.creditYears')} name="creditYears" value={form?.creditYears} onChange={handleChange} suffix={t('form.yearsSuffix')} />
+                <FormField label={t('form.loanAmount')} name="loanAmount" value={form?.loanAmount} onChange={handleChange} suffix={t('fmt.musd')} />
+                <FormField label={t('form.loanInterestDetail')} name="loanInterestRate" value={form?.loanInterestRate} onChange={handleChange} suffix="%" />
+                <FormField label={t('form.loanTerm')} name="loanTermYears" value={form?.loanTermYears} onChange={handleChange} suffix={t('form.yearsSuffix')} />
+                <FormField label={t('form.equityRatio')} name="equityRatio" value={form?.equityRatio} onChange={handleChange} suffix="%" />
               </div>
             </div>
             <div>
-              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><Wrench className="h-4 w-4 text-primary" /> Amortisman</h4>
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><Wrench className="h-4 w-4 text-primary" /> {t('form.depTitle')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">{t('form.depMethod')}</label>
                   <select name="depreciationMethod" value={form?.depreciationMethod ?? 'linear'} onChange={handleChange}
                     className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
-                    <option value="linear">Doğrusal (Eşit Paylar)</option>
+                    <option value="linear">{t('form.depLinearFull')}</option>
                     <option value="declining">{t('form.depDeclining')}</option>
                   </select>
                 </div>
-                <FormField label="Ekipman Amort. Ömrü" name="equipmentDepLife" value={form?.equipmentDepLife} onChange={handleChange} suffix="yıl" />
-                <FormField label="Tesis Amort. Ömrü" name="facilityDepLife" value={form?.facilityDepLife} onChange={handleChange} suffix="yıl" />
+                <FormField label={t('form.equipDepLifeShort')} name="equipmentDepLife" value={form?.equipmentDepLife} onChange={handleChange} suffix={t('form.yearsSuffix')} />
+                <FormField label={t('form.facilityDepLifeShort')} name="facilityDepLife" value={form?.facilityDepLife} onChange={handleChange} suffix={t('form.yearsSuffix')} />
               </div>
             </div>
             <div>
-              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><Droplets className="h-4 w-4 text-primary" /> Çevresel Parametreler</h4>
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><Droplets className="h-4 w-4 text-primary" /> {t('form.envTitle')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField label="Günlük Su Tüketimi" name="waterConsumptionDaily" value={form?.waterConsumptionDaily} onChange={handleChange} suffix="m³/gün" icon={Droplets} />
-                <FormField label="Rehabilitasyon Alanı" name="rehabilitationAreaHa" value={form?.rehabilitationAreaHa} onChange={handleChange} suffix="hektar" />
-                <FormField label="Rehabilitasyon Maliyeti" name="rehabilitationCostPerHa" value={form?.rehabilitationCostPerHa} onChange={handleChange} suffix="USD/ha" />
+                <FormField label={t('form.waterConsumption')} name="waterConsumptionDaily" value={form?.waterConsumptionDaily} onChange={handleChange} suffix={t('fmt.m3PerDay')} icon={Droplets} />
+                <FormField label={t('form.rehabArea')} name="rehabilitationAreaHa" value={form?.rehabilitationAreaHa} onChange={handleChange} suffix={t('fmt.hectare')} />
+                <FormField label={t('form.rehabCostPerHa')} name="rehabilitationCostPerHa" value={form?.rehabilitationCostPerHa} onChange={handleChange} suffix={t('fmt.usdPerHa')} />
               </div>
             </div>
             <div>
-              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><Mountain className="h-4 w-4 text-primary" /> Konum (Harita İçin)</h4>
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><Mountain className="h-4 w-4 text-primary" /> {t('form.locationMapTitle')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <FormField label="Enlem (Latitude)" name="latitude" value={form?.latitude} onChange={handleChange} placeholder="39.9334" />
-                <FormField label="Boylam (Longitude)" name="longitude" value={form?.longitude} onChange={handleChange} placeholder="32.8597" />
+                <FormField label={t('form.latitude')} name="latitude" value={form?.latitude} onChange={handleChange} placeholder="39.9334" />
+                <FormField label={t('form.longitude')} name="longitude" value={form?.longitude} onChange={handleChange} placeholder="32.8597" />
               </div>
               <LocationSearch
                 onSelect={(result) => {
@@ -1306,19 +1307,19 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
             className={cn('flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
               step === 0 ? 'text-muted-foreground cursor-not-allowed' : 'bg-card border border-border/50 hover:bg-accent text-foreground'
             )}>
-            <ChevronLeft className="h-4 w-4" /> Önceki
+            <ChevronLeft className="h-4 w-4" /> {t('form.previous')}
           </button>
           <div className="flex gap-2">
             {step < STEPS.length - 1 ? (
               <button onClick={() => setStep(step + 1)}
                 className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
-                Sonraki <ChevronRight className="h-4 w-4" />
+                {t('form.next')} <ChevronRight className="h-4 w-4" />
               </button>
             ) : (
               <button onClick={handleSubmit} disabled={saving}
                 className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                {isEditing ? 'Güncelle & Hesapla' : 'Oluştur & Hesapla'}
+                {isEditing ? t('form.submitUpdate') : t('form.submitCreate')}
               </button>
             )}
           </div>
@@ -1373,16 +1374,16 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                           {[item.manufacturer, item.model].filter(Boolean).join(' ')}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          {getCategoryLabel(item.category)}
+                          {t(`eqcat.${item.category || 'general'}`)}
                           {item.capacityLabel ? ` · ${item.capacityLabel}` : ''}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-xs font-mono">
-                          {formatEquipmentUsd(item.purchasePriceUsd)} USD
+                          {formatEquipmentUsd(item.purchasePriceUsd)} {t('fmt.usd')}
                         </p>
                         <p className="text-[10px] text-muted-foreground">
-                          {formatSpecNumber(item.fuelConsumptionLph, { digits: 1, suffix: 'lt/sa' })}
+                          {formatSpecNumber(item.fuelConsumptionLph, { digits: 1, suffix: t('form.ltPerHour') })}
                         </p>
                       </div>
                     </div>

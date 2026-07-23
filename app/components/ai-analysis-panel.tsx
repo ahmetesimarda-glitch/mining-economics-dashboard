@@ -69,7 +69,7 @@ export function AIAnalysisPanel({ projectId }: AIAnalysisPanelProps) {
       });
 
       if (!response.ok) {
-        let errMsg = 'AI analiz servisi yanıt vermedi';
+        let errMsg = t('ai.serviceUnavailable');
         try {
           const errData = await response.json();
           errMsg = errData?.error ?? errMsg;
@@ -78,7 +78,7 @@ export function AIAnalysisPanel({ projectId }: AIAnalysisPanelProps) {
       }
 
       const reader = response.body?.getReader();
-      if (!reader) throw new Error('Stream okunam\u0131yor');
+      if (!reader) throw new Error(t('ai.streamUnreadable'));
 
       const decoder = new TextDecoder();
       let partialRead = '';
@@ -118,7 +118,7 @@ export function AIAnalysisPanel({ projectId }: AIAnalysisPanelProps) {
                 setProgress(100);
                 return;
               } else if (parsed.status === 'error') {
-                throw new Error(parsed.message || 'Analiz ba\u015far\u0131s\u0131z');
+                throw new Error(parsed.message || t('ai.analysisFailed'));
               }
             } catch (e: any) {
               if (e?.message && !e.message.includes('JSON')) throw e;
@@ -128,7 +128,7 @@ export function AIAnalysisPanel({ projectId }: AIAnalysisPanelProps) {
       }
     } catch (err: any) {
       console.error('AI Analysis error:', err);
-      setError(err?.message ?? 'Bilinmeyen hata');
+      setError(err?.message ?? t('ai.unknownError'));
     } finally {
       setLoading(false);
     }
@@ -225,7 +225,7 @@ export function AIAnalysisPanel({ projectId }: AIAnalysisPanelProps) {
         <p className="text-sm text-red-400 text-center max-w-md">{error}</p>
         {isCreditError && (
           <p className="text-xs text-muted-foreground text-center max-w-md">
-            AI analiz özelliği LLM API kredisi kullanır. Kredi limitiniz dolduğunda bu özellik geçici olarak devre dışı kalır.
+            {t('ai.creditHint')}
           </p>
         )}
         {!isCreditError && (
