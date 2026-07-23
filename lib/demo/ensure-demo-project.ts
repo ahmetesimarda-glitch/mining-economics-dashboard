@@ -109,7 +109,14 @@ export async function ensureDemoProject(
   if (existing) {
     await prisma.miningProject.update({
       where: { id: demo.id },
-      data: scalarData,
+      data: {
+        ...scalarData,
+        // Refresh cached cash-flow rows so demo input corrections stay consistent.
+        cashFlows: {
+          deleteMany: {},
+          create: cashFlowData,
+        },
+      },
     });
     return { id: demo.id, created: false };
   }

@@ -24,7 +24,7 @@ export const DEMO_CARD_META: readonly DemoCardMeta[] = [
     mineType: 'copper',
     miningMethod: 'openPit',
     country: 'Chile',
-    productionLabel: '85 ktpa Cu',
+    productionLabel: '4.8 Mtpa ore (~27 ktpa Cu)',
     accent: 'copper',
     projectLifeYears: 25,
   },
