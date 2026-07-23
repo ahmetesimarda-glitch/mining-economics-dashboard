@@ -34,7 +34,7 @@ Complexity is rated **S / M / L / XL**. Priority is **P0 (critical) → P3 (oppo
 - **UX polish (portfolio selection + Catalogs nav + Country Intelligence)** — selectable dashboard KPIs (localStorage), enterprise Catalogs dropdown, Country Intelligence panel on project detail.
 - **Internal demo analytics** — `/internal/demo-analytics`, `DemoAnalyticsEvent`, visitor UUID + funnel/timeline (`lib/analytics/`). Pre-auth precursor to Admin Dashboard.
 - **Project location search** — Nominatim proxy (`/api/location/search`), normalized City/State/Country strings, OSM map tiles (`ProjectMap`). GIS-ready; no form redesign.
-- **Mining Market Insights (architecture)** — `lib/news/` service + placeholder `NewsCard` section on dashboard. No live news/commodity/AI APIs yet.
+- **Mining Intelligence** — `lib/mining-intelligence.ts` + dashboard `MiningIntelligencePanel`. Evergreen reference briefs (not live news); provider interface ready for a future live API without UI changes.
 - **Two deployment paths** — Abacus managed (`next.config.js`) and self-host/Docker/Railway (`next.config.github.js`, `Dockerfile`, `docker-compose.yml`, `SELF_HOST_GUIDE.md`).
 
 ### Partially implemented / has known gaps

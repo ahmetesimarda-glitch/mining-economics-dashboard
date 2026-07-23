@@ -84,6 +84,7 @@ nextjs_space/
 │   ├── ui/                       # Radix-based reusable primitives (button, card, dialog, tabs, ...)
 │   ├── master-data/equipment/    # Equipment Catalog UI pieces (table, filters, dialog, form)
 │   ├── country-intelligence.tsx  # Country Intelligence panel (project detail)
+│   ├── mining-intelligence.tsx   # Mining Intelligence panel (dashboard reference briefs)
 │   ├── header.tsx                # App header / enterprise nav (Catalogs ▼)
 │   ├── project-card.tsx          # Project list card (portfolio selection checkbox)
 │   ├── ai-analysis-panel.tsx     # AI analysis UI (streaming)
@@ -92,6 +93,7 @@ nextjs_space/
 │   ├── calculations.ts           # ★ CORE FINANCIAL ENGINE — all economic formulas
 │   ├── decision-insights.ts      # Read-only executive interpretation of existing outputs
 │   ├── country-intelligence.ts   # Country Intelligence profiles (no invented values)
+│   ├── mining-intelligence.ts    # Mining Intelligence service (static → future live API)
 │   ├── dashboard/                # Portfolio selection persistence + KPI aggregation
 │   ├── market-reference.ts       # Equipment price refs, emission factors, commodity references
 │   ├── prisma.ts                 # Prisma client singleton
@@ -135,7 +137,7 @@ Master Data UI/API live under `app/master-data/**` and `app/api/master-data/**`.
 14. **Decision Insights** (`app/decision-insights`, `lib/decision-insights.ts`, `/api/projects/[id]/decision-insights`): read-only executive investment interpretation (recommendation, risk, financial strength, advantages/risks/observations, summary). Consumes cached NPV/IRR/payback/CAPEX/OPEX/cash flows plus existing sensitivity and Monte Carlo outputs — **does not** modify or re-implement economic formulas.
 15. **Exports**: **Excel** (`/api/projects/[id]/xlsx` via `lib/reports/excel/` + ExcelJS) and **PDF** (`/api/projects/[id]/pdf` via `lib/reports/pdf/` + local Puppeteer).
 16. **Internal demo analytics**: `/internal/demo-analytics` (pre-auth visitor events). Temporary production gate: `INTERNAL_ANALYTICS_ENABLED`. After Authentication: Administrator RBAC only (`ROADMAP.md` §5).
-17. **Mining Market Insights**: placeholder news architecture on the dashboard (`lib/news/`).
+17. **Mining Intelligence**: educational industry reference panel on the dashboard (`lib/mining-intelligence.ts` + `components/mining-intelligence.tsx`). Static evergreen briefs with a **Reference Information** badge — not live news. UI is provider-stable so a future live news API swaps only the service layer.
 18. **Internationalization**: full TR/EN switching via `lib/i18n`.
 19. **Master Data — Equipment Catalog** (`/master-data/equipment`, `/api/master-data/equipment`): commercial CRUD catalog (~445 OEM seed rows) with OEM-aware search, manufacturer/category/power/active filters, sort + page size, table/card views, detail drawer, facets endpoint, and snapshot Add-to-Project into the fleet. Seed architecture lives under `lib/master-data/seed/` (regenerable via `scripts/generate-equipment-catalog.py`).
 20. **Master Data — Commodity Catalog** (`/master-data/commodity`, `/api/master-data/commodity`): engineering defaults per commodity (price, grade range, recovery, mine life, processing, royalty, …). Seeded via `buildCommodityCatalogSeedRows()` / `seedCommodityCatalogIdempotent`; production self-heal at `GET /api/master-data/commodity/ensure`.

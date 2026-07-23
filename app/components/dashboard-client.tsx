@@ -13,7 +13,7 @@ import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n/context';
 import { WelcomeDialog } from '@/components/demo/WelcomeDialog';
 import { DemoPortfolio } from '@/components/demo/DemoPortfolio';
-import { MiningMarketInsights } from '@/app/components/news/mining-market-insights';
+import { MiningIntelligencePanel } from '@/components/mining-intelligence';
 import {
   DEMO_PROJECT_ID,
   dismissWelcomePermanently,
@@ -285,7 +285,7 @@ export function DashboardClient() {
           />
         )}
 
-        <MiningMarketInsights />
+        <MiningIntelligencePanel />
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-xl font-semibold tracking-tight">
