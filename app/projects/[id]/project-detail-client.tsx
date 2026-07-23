@@ -29,7 +29,8 @@ import {
   Mountain, BarChart3, PieChart, LineChart, Table as TableIcon, FileDown,
   Truck, Users, Gem, Pickaxe, Fuel, Wrench, Activity, Layers, Gauge,
   Calendar, Database, Leaf, ShieldAlert, CreditCard, MapPin, Dice5, Droplets,
-  TreePine, AlertTriangle, FileText, ArrowDown, BarChart2, Crosshair, Brain, RefreshCw
+  TreePine, AlertTriangle, FileText, ArrowDown, BarChart2, Crosshair, Brain, RefreshCw,
+  Lightbulb
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -371,6 +372,12 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Link
+              href={`/decision-insights?project=${projectId}`}
+              className="flex items-center gap-2 rounded-lg bg-card border border-border/50 px-3 py-2 text-xs font-medium hover:bg-accent transition-colors"
+            >
+              <Lightbulb className="h-3.5 w-3.5" /> {t('detail.decisionInsights')}
+            </Link>
             <button onClick={handleExportCSV} className="flex items-center gap-2 rounded-lg bg-card border border-border/50 px-3 py-2 text-xs font-medium hover:bg-accent transition-colors">
               <FileDown className="h-3.5 w-3.5" /> {t('detail.csvExport')}
             </button>

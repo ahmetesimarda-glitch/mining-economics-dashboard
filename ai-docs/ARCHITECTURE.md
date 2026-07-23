@@ -47,7 +47,7 @@ The key architectural rule is that **business logic never imports Prisma or `nex
 - **`app/`** — App Router routes. Page routes (server/client components) render the dashboard UI; `app/layout.tsx` provides the root layout (including the Abacus app script and theme provider) and `app/globals.css` holds global styles.
 - **`app/api/`** — backend Route Handlers. Notable groups: `app/api/projects/` (project CRUD), `app/api/projects/[id]/ai-analysis/` (streaming AI), `app/api/projects/[id]/pdf/` (PDF export), `app/api/market/` (live commodity/FX prices with in-memory caching), `app/api/master-data/equipment|commodity|country/` (Master Data CRUD + ensure).
 - **`components/`** — reusable React components: UI primitives under `components/ui/` (shadcn/Radix-based), plus feature components (charts, forms, maps, panels). Prefer extending these over creating new primitives.
-- **`lib/`** — framework-agnostic logic: `calculations.ts` (economic engine), `prisma.ts` (DB client), `market-reference.ts` (catalogs/constants), `master-data/` (equipment/commodity/country types, validation, seeds, `project-defaults.ts` composition), `i18n/translations.ts` (TR/EN strings), utility helpers.
+- **`lib/`** — framework-agnostic logic: `calculations.ts` (economic engine), `decision-insights.ts` (read-only executive interpretation), `prisma.ts` (DB client), `market-reference.ts` (catalogs/constants), `master-data/` (equipment/commodity/country types, validation, seeds, `project-defaults.ts` composition), `i18n/translations.ts` (TR/EN strings), utility helpers.
 - **`app/master-data/`** — Master Data page shells (Equipment, Commodity, Country).
 - **`components/master-data/`** — reusable Master Data UI pieces (Equipment table/filters/dialog; Commodity/Country clients are page-local for now).
 - **`prisma/`** — `schema.prisma` (single source of truth for the data model). See `DATABASE.md`.
@@ -132,6 +132,15 @@ The economic semantics (Year-0 outflow, royalty basis, tax gating, discounting, 
 - **Layer:** `lib/news/` — types, placeholder articles, `NewsService` interface + `PlaceholderNewsService`.
 - **UI:** reusable `NewsCard` + dashboard section `MiningMarketInsights` (“Mining Market Insights”).
 - **No live APIs.** Future commodity/news/AI brief providers implement `NewsService` without changing UI contracts.
+
+---
+
+## 8e. Decision Insights (read-only interpretation)
+
+- **Service:** `lib/decision-insights.ts` — `generateDecisionInsights(project)` interprets existing outputs only (NPV, IRR, payback, CAPEX, OPEX, initial investment, average annual cash flow, sensitivity series, Monte Carlo stats, commodity/country/mine type/production). Named threshold constants; no calls that recompute economic formulas.
+- **API:** `GET /api/projects/[id]/decision-insights` — loads cached project metrics + cash flows, consumes existing sensitivity/`runMonteCarloSimulation` outputs (same read-and-recompute pattern as those analysis routes), returns `DecisionInsight`. Never mutates the project.
+- **UI:** `/decision-insights` with recommendation / strength / risk badges, executive summary, advantages, risks, observations. Linked from project detail and header nav.
+- **Constraint:** must not change `lib/calculations.ts` formulas or cached economic results.
 
 ---
 
