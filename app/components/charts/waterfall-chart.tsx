@@ -17,6 +17,7 @@ interface WaterfallChartProps {
 }
 
 export function WaterfallChart({ data }: WaterfallChartProps) {
+  const { t } = useLanguage();
   if (!data || data.length === 0) return null;
 
   // Build waterfall with invisible base + visible bar
@@ -44,14 +45,25 @@ export function WaterfallChart({ data }: WaterfallChartProps) {
     return 'hsl(217, 91%, 60%)';
   };
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const typeLabel = (type: string) => {
+    if (type === 'total') return t('chart.total');
+    if (type === 'positive') return t('chart.income');
+    return t('chart.expense');
+  };
+
+  const CustomTooltip = ({ active, payload }: {
+    active?: boolean;
+    payload?: Array<{ payload?: { name?: string; value?: number; total?: number; type?: string } }>;
+  }) => {
     if (!active || !payload || !payload.length) return null;
     const d = payload[0]?.payload;
     return (
       <div className="rounded-lg bg-background/95 border border-border p-3 shadow-xl text-sm">
         <p className="font-semibold mb-1">{d?.name}</p>
-        <p>{d?.type === 'total' ? 'Toplam' : d?.type === 'positive' ? 'Gelir' : 'Gider'}: {d?.value?.toFixed(2)} MUSD</p>
-        {d?.type !== 'total' && <p className="text-muted-foreground">Kümülatif: {d?.total?.toFixed(2)} MUSD</p>}
+        <p>{typeLabel(d?.type ?? '')}: {d?.value?.toFixed(2)} MUSD</p>
+        {d?.type !== 'total' && (
+          <p className="text-muted-foreground">{t('cf.cumulative')}: {d?.total?.toFixed(2)} MUSD</p>
+        )}
       </div>
     );
   };

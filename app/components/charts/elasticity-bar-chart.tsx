@@ -3,6 +3,8 @@
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
+import { useLanguage } from '@/lib/i18n/context';
+import { translateParamLabel } from '@/lib/i18n/param-labels';
 
 interface ElasticityItem {
   parameter: string;
@@ -18,27 +20,32 @@ interface ElasticityBarChartProps {
 }
 
 export function ElasticityBarChart({ data }: ElasticityBarChartProps) {
+  const { t } = useLanguage();
   if (!data || data.length === 0) return null;
 
   const chartData = data.map((d) => ({
-    name: d.label,
+    name: translateParamLabel(t, { parameter: d.parameter, label: d.label }),
     elasticity: d.elasticity,
     direction: d.direction,
     npvDown: d.npvAt10Down,
     npvUp: d.npvAt10Up,
   }));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{ payload?: { elasticity?: number; npvDown?: number; npvUp?: number; direction?: string } }>;
+    label?: string;
+  }) => {
     if (!active || !payload?.length) return null;
     const d = payload[0]?.payload;
     return (
       <div className="rounded-lg bg-background/95 border border-border p-3 shadow-xl text-sm">
         <p className="font-semibold mb-1">{label}</p>
-        <p className="text-muted-foreground">Esneklik: {d?.elasticity?.toFixed(3)}</p>
+        <p className="text-muted-foreground">{t('chart.elasticity')}: {d?.elasticity?.toFixed(3)}</p>
         <p className="text-red-400">-10%: NPV = {d?.npvDown?.toFixed(1)} MUSD</p>
         <p className="text-emerald-400">+10%: NPV = {d?.npvUp?.toFixed(1)} MUSD</p>
         <p className="text-muted-foreground text-xs mt-1">
-          {d?.direction === 'positive' ? '\u2191 Art\u0131nca NPV artar' : '\u2193 Art\u0131nca NPV azal\u0131r'}
+          {d?.direction === 'positive' ? t('chart.npvIncreases') : t('chart.npvDecreases')}
         </p>
       </div>
     );

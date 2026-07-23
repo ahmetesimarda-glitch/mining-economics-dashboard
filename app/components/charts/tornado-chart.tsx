@@ -1,6 +1,7 @@
 'use client';
 
 import { useLanguage } from '@/lib/i18n/context';
+import { translateParamLabel } from '@/lib/i18n/param-labels';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ReferenceLine,
@@ -40,7 +41,7 @@ export function TornadoChart({ data }: TornadoChartProps) {
     const lowDelta = item.lowNpv - baseNpv;
     const highDelta = item.highNpv - baseNpv;
     return {
-      name: item.label,
+      name: translateParamLabel(t, { parameter: item.parameter, label: item.label }),
       base: Math.min(lowDelta, 0),
       red: Math.abs(Math.min(lowDelta, 0)),
       green: Math.max(highDelta, 0),
@@ -50,15 +51,19 @@ export function TornadoChart({ data }: TornadoChartProps) {
     };
   });
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{ payload?: { lowNpv?: number; highNpv?: number; impact?: number } }>;
+    label?: string;
+  }) => {
     if (!active || !payload || !payload.length) return null;
     const d = payload[0]?.payload;
     return (
       <div className="rounded-lg bg-background/95 border border-border p-3 shadow-xl text-sm">
         <p className="font-semibold mb-1">{label}</p>
-        <p className="text-red-400">▼ Kötümser: {d?.lowNpv?.toFixed(1)} MUSD</p>
-        <p className="text-emerald-400">▲ İyimser: {d?.highNpv?.toFixed(1)} MUSD</p>
-        <p className="text-muted-foreground">Etki aralığı: {d?.impact?.toFixed(1)} MUSD</p>
+        <p className="text-red-400">▼ {t('chart.pessimistic')}: {d?.lowNpv?.toFixed(1)} MUSD</p>
+        <p className="text-emerald-400">▲ {t('chart.optimistic')}: {d?.highNpv?.toFixed(1)} MUSD</p>
+        <p className="text-muted-foreground">{t('chart.impactRange')}: {d?.impact?.toFixed(1)} MUSD</p>
       </div>
     );
   };
@@ -66,7 +71,7 @@ export function TornadoChart({ data }: TornadoChartProps) {
   return (
     <div>
       <div className="text-center mb-2">
-        <p className="text-xs text-muted-foreground">Baz NPV: {baseNpv.toFixed(1)} MUSD</p>
+        <p className="text-xs text-muted-foreground">{t('chart.baseNpv')}: {baseNpv.toFixed(1)} MUSD</p>
       </div>
       <ResponsiveContainer width="100%" height={Math.max(300, sorted.length * 45)}>
         <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 120, bottom: 5 }}>

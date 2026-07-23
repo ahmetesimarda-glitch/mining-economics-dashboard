@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useLanguage } from '@/lib/i18n/context';
 
 interface TwoWayHeatmapProps {
   data: { priceChange: number; opexChange: number; npv: number }[];
@@ -26,7 +27,8 @@ function getNpvColor(npv: number, minNpv: number, maxNpv: number): string {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-export function TwoWayHeatmap({ data, priceRange, opexRange, baseNpv }: TwoWayHeatmapProps) {
+export function TwoWayHeatmap({ data, priceRange, opexRange }: TwoWayHeatmapProps) {
+  const { t } = useLanguage();
   const { grid, minNpv, maxNpv } = useMemo(() => {
     const gridMap = new Map<string, number>();
     let min = Infinity;
@@ -48,7 +50,7 @@ export function TwoWayHeatmap({ data, priceRange, opexRange, baseNpv }: TwoWayHe
         <thead>
           <tr>
             <th className="px-2 py-2 text-left bg-muted/30 border border-border/30 font-semibold text-muted-foreground" rowSpan={2}>
-              Fiyat \u2193 / OPEX \u2192
+              {t('chart.priceVsOpex')}
             </th>
             {opexRange.map((o) => (
               <th key={o} className="px-2 py-1.5 text-center bg-muted/30 border border-border/30 font-medium text-muted-foreground">
@@ -78,7 +80,7 @@ export function TwoWayHeatmap({ data, priceRange, opexRange, baseNpv }: TwoWayHe
                       backgroundColor: bgColor,
                       color: npv <= 0 ? '#fecaca' : '#d1fae5',
                     }}
-                    title={`Fiyat: ${p > 0 ? '+' : ''}${p}%, OPEX: ${o > 0 ? '+' : ''}${o}%, NPV: ${npv.toFixed(1)} MUSD`}
+                    title={`${t('chart.price')}: ${p > 0 ? '+' : ''}${p}%, OPEX: ${o > 0 ? '+' : ''}${o}%, NPV: ${npv.toFixed(1)} MUSD`}
                   >
                     {npv.toFixed(0)}
                   </td>
@@ -91,15 +93,15 @@ export function TwoWayHeatmap({ data, priceRange, opexRange, baseNpv }: TwoWayHe
       <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <span className="w-4 h-3 rounded" style={{ backgroundColor: 'rgb(255, 20, 20)' }} />
-          <span>NPV &lt; 0</span>
+          <span>{t('chart.npvNegative')}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-4 h-3 rounded" style={{ backgroundColor: 'rgb(30, 220, 60)' }} />
-          <span>NPV &gt; 0</span>
+          <span>{t('chart.npvPositive')}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-4 h-3 rounded border-2 border-primary" />
-          <span>Baz Durum</span>
+          <span>{t('chart.baseCase')}</span>
         </div>
       </div>
     </div>

@@ -30,24 +30,27 @@ export function NpvBuildupChart({ cashFlows }: NpvBuildupChartProps) {
   // Find break-even year
   const breakEvenYear = data.find((d) => d.cumulativeNpv >= 0)?.year;
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: {
+    active?: boolean;
+    payload?: Array<{ payload?: { year?: number; cumulativeNpv?: number; discounted?: number } }>;
+  }) => {
     if (!active || !payload || !payload.length) return null;
     const d = payload[0]?.payload;
     return (
       <div className="rounded-lg bg-background/95 border border-border p-3 shadow-xl text-sm">
-        <p className="font-semibold mb-1">Yıl {d?.year}</p>
-        <p className="text-blue-400">Kümülatif NPV: {d?.cumulativeNpv?.toFixed(2)} MUSD</p>
-        <p className="text-muted-foreground">İndirgenmiş NA: {d?.discounted?.toFixed(2)} MUSD</p>
+        <p className="font-semibold mb-1">{t('chart.year')} {d?.year}</p>
+        <p className="text-blue-400">{t('chart.cumulativeNpv')}: {d?.cumulativeNpv?.toFixed(2)} MUSD</p>
+        <p className="text-muted-foreground">{t('chart.discountedCf')}: {d?.discounted?.toFixed(2)} MUSD</p>
       </div>
     );
   };
 
   return (
     <div>
-      {breakEvenYear && (
+      {breakEvenYear !== undefined && (
         <div className="text-center mb-2">
           <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-500">
-            NPV başabaş: Yıl {breakEvenYear}
+            {t('chart.npvBreakevenYear')} {breakEvenYear}
           </span>
         </div>
       )}
@@ -60,7 +63,7 @@ export function NpvBuildupChart({ cashFlows }: NpvBuildupChartProps) {
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-          <XAxis dataKey="year" fontSize={11} label={{ value: 'Yıl', position: 'insideBottomRight', offset: -5, fontSize: 11 }} />
+          <XAxis dataKey="year" fontSize={11} label={{ value: t('fin.year'), position: 'insideBottomRight', offset: -5, fontSize: 11 }} />
           <YAxis fontSize={11} tickFormatter={(v: number) => `${v.toFixed(0)}`} />
           <Tooltip content={<CustomTooltip />} />
           <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeDasharray="5 5" strokeOpacity={0.5} />

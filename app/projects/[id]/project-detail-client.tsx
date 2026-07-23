@@ -19,9 +19,11 @@ import { ElasticityBarChart } from '@/app/components/charts/elasticity-bar-chart
 import { AIAnalysisPanel } from '@/app/components/ai-analysis-panel';
 import { formatMUSD, formatPercent, formatYear, formatNumber } from '@/lib/format';
 import { useLanguage } from '@/lib/i18n/context';
+import { translateParamLabel } from '@/lib/i18n/param-labels';
 import { DemoBadge } from '@/components/demo/DemoBadge';
 import { isDemoProjectId, setLastOpenedProjectId } from '@/lib/demo';
 import { trackAnalyticsEvent } from '@/lib/analytics';
+import { toast } from 'sonner';
 import {
   DollarSign, TrendingUp, Clock, Target, Loader2, Edit, ArrowLeft,
   Mountain, BarChart3, PieChart, LineChart, Table as TableIcon, FileDown,
@@ -58,6 +60,8 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
   const [equipRenewalEnabled, setEquipRenewalEnabled] = useState(true);
   const [equipRenewalCycle, setEquipRenewalCycle] = useState(10);
   const [renewalSaving, setRenewalSaving] = useState(false);
+
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (projectId) setLastOpenedProjectId(projectId);
@@ -124,7 +128,10 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
         const updated = await res?.json();
         setProject(updated);
       }
-    } catch (err: any) { console.error(err); }
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error(t('detail.saveFailed'));
+    }
     finally { setRenewalSaving(false); }
   };
 
@@ -136,7 +143,10 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
         setMcData(await res?.json());
         void trackAnalyticsEvent('monte_carlo_executed', { projectId });
       }
-    } catch (err: any) { console.error(err); }
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error(t('detail.mcFailed'));
+    }
     finally { setMcLoading(false); }
   };
 
@@ -155,11 +165,13 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
         setProject(updated);
         setEditingContractor(false);
       }
-    } catch (err: any) { console.error(err); }
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error(t('detail.saveFailed'));
+    }
     finally { setContractorSaving(false); }
   };
 
-  const { t } = useLanguage();
   const getMineTypeLabel = (v: string) => t(`mine.${v}`) !== `mine.${v}` ? t(`mine.${v}`) : (v ?? t('fmt.unknown'));
   const getMiningMethodLabel = (v: string) => t(`method.${v}`) !== `method.${v}` ? t(`method.${v}`) : (v ?? t('fmt.unknown'));
   const getCategoryLabel = (v: string) => t(`eqcat.${v}`) !== `eqcat.${v}` ? t(`eqcat.${v}`) : (v ?? t('eqcat.general'));
@@ -215,17 +227,17 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
 
   const capexData = [
     { name: t('form.step.equipment'), value: p?.equipmentCost ?? 0 },
-    { name: t('form.processingCapex').split(' (')[0], value: p?.facilityCost ?? 0 },
-    { name: t('form.infrastructureCapex').split(' (')[0], value: p?.infrastructureCost ?? 0 },
-    { name: 'Orman/Arazi', value: (p?.forestCost ?? 0) + (p?.landCost ?? 0) },
-    { name: t('env.totalRehab').split(' ')[0], value: p?.rehabilitationCost ?? 0 },
+    { name: t('cost.processing'), value: p?.facilityCost ?? 0 },
+    { name: t('cost.infrastructure'), value: p?.infrastructureCost ?? 0 },
+    { name: t('cost.forestLand'), value: (p?.forestCost ?? 0) + (p?.landCost ?? 0) },
+    { name: t('cost.rehab'), value: p?.rehabilitationCost ?? 0 },
   ];
   const opexData = [
-    { name: t('fuel.title').split(' ')[0], value: p?.fuelCost ?? 0 },
+    { name: t('cost.fuel'), value: p?.fuelCost ?? 0 },
     { name: t('equip.personnelTitle'), value: p?.personnelCost ?? 0 },
-    { name: t('fuel.mainTitle').split(' ')[0], value: p?.maintenanceCost ?? 0 },
-    { name: t('form.explosiveCost').split(' (')[0], value: p?.explosivesCost ?? 0 },
-    { name: 'Lastik', value: p?.tireCost ?? 0 },
+    { name: t('cost.maintenance'), value: p?.maintenanceCost ?? 0 },
+    { name: t('cost.explosives'), value: p?.explosivesCost ?? 0 },
+    { name: t('cost.tire'), value: p?.tireCost ?? 0 },
     { name: t('mine.other'), value: p?.otherOpex ?? 0 },
   ];
 
@@ -270,7 +282,10 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
         const a = document?.createElement?.('a');
         if (a) { a.href = url ?? ''; a.download = `${p?.name ?? 'proje'}_analiz.csv`; a.click?.(); window?.URL?.revokeObjectURL?.(url ?? ''); }
       }
-    } catch (err: any) { console.error(err); }
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error(t('detail.exportFailed'));
+    }
   };
 
   const handleExportXLSX = async () => {
@@ -283,7 +298,10 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
         if (a) { a.href = url ?? ''; a.download = `${p?.name ?? 'proje'}_analiz.xlsx`; a.click?.(); window?.URL?.revokeObjectURL?.(url ?? ''); }
         void trackAnalyticsEvent('excel_exported', { projectId });
       }
-    } catch (err: any) { console.error(err); }
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error(t('detail.exportFailed'));
+    }
   };
 
   const handleExportPDF = async () => {
@@ -297,7 +315,10 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
         if (a) { a.href = url ?? ''; a.download = `${p?.name ?? 'proje'}_fizibilite_raporu.pdf`; a.click?.(); window?.URL?.revokeObjectURL?.(url ?? ''); }
         void trackAnalyticsEvent('pdf_generated', { projectId });
       }
-    } catch (err: any) { console.error(err); }
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error(t('detail.exportFailed'));
+    }
     finally { setPdfLoading(false); }
   };
 
@@ -1197,7 +1218,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                         <tbody>
                           {econSens.switchoverValues.map((sv: any, i: number) => (
                             <tr key={sv.parameter} className={cn('border-t border-border/20', i % 2 !== 0 && 'bg-muted/20')}>
-                              <td className="px-3 py-2 font-medium">{sv.label}</td>
+                              <td className="px-3 py-2 font-medium">{translateParamLabel(t, { parameter: sv.parameter, label: sv.label })}</td>
                               <td className="px-3 py-2 text-right font-mono">{sv.baseValue} {sv.unit}</td>
                               <td className="px-3 py-2 text-right font-mono">
                                 {sv.switchoverPercent !== null ? (
@@ -1222,7 +1243,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                                     %{sv.safetyMargin.toFixed(1)}
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400">Güvenli</span>
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400">{t('chart.safe')}</span>
                                 )}
                               </td>
                             </tr>
@@ -1281,7 +1302,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                       <tbody>
                         {econSens.summaryTable.map((row: any, ri: number) => (
                           <tr key={row.parameter} className={cn(ri % 2 !== 0 && 'bg-muted/20')}>
-                            <td className="px-3 py-1.5 font-medium border border-border/30 whitespace-nowrap">{row.label}</td>
+                            <td className="px-3 py-1.5 font-medium border border-border/30 whitespace-nowrap">{translateParamLabel(t, { parameter: row.parameter, label: row.label })}</td>
                             {(row.data ?? []).flatMap((d: any, di: number) => [
                                 <td key={`npv-${ri}-${di}`} className={cn(
                                   'px-2 py-1.5 text-center font-mono border border-border/20',

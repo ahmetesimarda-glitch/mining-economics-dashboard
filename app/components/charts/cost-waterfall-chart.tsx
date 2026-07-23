@@ -2,8 +2,9 @@
 
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Cell, ReferenceLine, Legend,
+  Cell,
 } from 'recharts';
+import { useLanguage } from '@/lib/i18n/context';
 
 interface CostWaterfallProps {
   revenue: number;
@@ -16,18 +17,19 @@ interface CostWaterfallProps {
 }
 
 export function CostWaterfallChart(props: CostWaterfallProps) {
+  const { t } = useLanguage();
   const { revenue, opex, royalty, tax, creditPayment, creditInterest, netCashFlow } = props;
   if (!revenue) return null;
 
   const items = [
-    { name: 'Gelir', value: revenue, type: 'positive' as const },
-    { name: 'İşletme Gideri', value: -opex, type: 'negative' as const },
-    { name: 'Devlet Hakkı', value: -royalty, type: 'negative' as const },
-    { name: 'Vergi', value: -tax, type: 'negative' as const },
+    { name: t('cf.revenue'), value: revenue, type: 'positive' as const },
+    { name: t('chart.opex'), value: -opex, type: 'negative' as const },
+    { name: t('chart.royalty'), value: -royalty, type: 'negative' as const },
+    { name: t('chart.tax'), value: -tax, type: 'negative' as const },
   ];
-  if (creditPayment > 0) items.push({ name: 'Kredi Ödemesi', value: -creditPayment, type: 'negative' as const });
-  if (creditInterest > 0) items.push({ name: 'Kredi Faizi', value: -creditInterest, type: 'negative' as const });
-  items.push({ name: 'Net Nakit', value: netCashFlow, type: 'positive' as const });
+  if (creditPayment > 0) items.push({ name: t('chart.creditPayment'), value: -creditPayment, type: 'negative' as const });
+  if (creditInterest > 0) items.push({ name: t('chart.creditInterest'), value: -creditInterest, type: 'negative' as const });
+  items.push({ name: t('chart.netCash'), value: netCashFlow, type: 'positive' as const });
 
   // Build waterfall
   let cumulative = 0;
@@ -51,7 +53,10 @@ export function CostWaterfallChart(props: CostWaterfallProps) {
     return 'hsl(0, 72%, 51%)';
   };
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: {
+    active?: boolean;
+    payload?: Array<{ payload?: { name?: string; value?: number } }>;
+  }) => {
     if (!active || !payload || !payload.length) return null;
     const d = payload[0]?.payload;
     return (

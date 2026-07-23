@@ -19,6 +19,10 @@ export function ProductionProfileChart({ cashFlows }: ProductionProfileChartProp
   const { t } = useLanguage();
   if (!cashFlows || cashFlows.length === 0) return null;
 
+  const revLabel = t('cf.revenue');
+  const opexLabel = t('chart.opex');
+  const netLabel = t('chart.netCashFlow');
+
   const data = cashFlows
     .filter((cf) => cf.year > 0)
     .map((cf) => ({
@@ -28,12 +32,16 @@ export function ProductionProfileChart({ cashFlows }: ProductionProfileChartProp
       netCash: parseFloat(cf.netCashFlow.toFixed(2)),
     }));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{ name?: string; color?: string; value?: number }>;
+    label?: number;
+  }) => {
     if (!active || !payload || !payload.length) return null;
     return (
       <div className="rounded-lg bg-background/95 border border-border p-3 shadow-xl text-sm">
-        <p className="font-semibold mb-1">Yıl {label}</p>
-        {payload.map((p: any, i: number) => (
+        <p className="font-semibold mb-1">{t('chart.year')} {label}</p>
+        {payload.map((p, i) => (
           <p key={i} style={{ color: p.color }}>
             {p.name}: {p.value?.toFixed(2)} MUSD
           </p>
@@ -50,9 +58,9 @@ export function ProductionProfileChart({ cashFlows }: ProductionProfileChartProp
         <YAxis fontSize={11} tickFormatter={(v: number) => `${v.toFixed(0)}`} />
         <Tooltip content={<CustomTooltip />} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Bar dataKey="revenue" name="Gelir" fill="hsl(142, 71%, 45%)" opacity={0.7} radius={[2, 2, 0, 0]} />
-        <Bar dataKey="opex" name="İşletme Gideri" fill="hsl(0, 72%, 51%)" opacity={0.7} radius={[2, 2, 0, 0]} />
-        <Line type="monotone" dataKey="netCash" name="Net Nakit Akışı" stroke="hsl(217, 91%, 60%)" strokeWidth={2.5} dot={false} />
+        <Bar dataKey="revenue" name={revLabel} fill="hsl(142, 71%, 45%)" opacity={0.7} radius={[2, 2, 0, 0]} />
+        <Bar dataKey="opex" name={opexLabel} fill="hsl(0, 72%, 51%)" opacity={0.7} radius={[2, 2, 0, 0]} />
+        <Line type="monotone" dataKey="netCash" name={netLabel} stroke="hsl(217, 91%, 60%)" strokeWidth={2.5} dot={false} />
       </ComposedChart>
     </ResponsiveContainer>
   );
