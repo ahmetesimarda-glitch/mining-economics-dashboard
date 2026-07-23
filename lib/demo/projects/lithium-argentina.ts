@@ -2,8 +2,15 @@ import type { DemoProjectDefinition } from '../types';
 import { buildParams, equipmentRow, standardMineStaff } from '../helpers';
 
 /**
- * Argentina lithium — open-pit hard-rock spodumene / chemical-grade concentrate.
- * 220 ktpa SC6 concentrate @ ~$1,900/t.
+ * Argentina lithium — open-pit hard-rock spodumene.
+ *
+ * Engine convention: **ore throughput (Mt/year)** + ore NSR ($/t ore), not SC6 concentrate Mt.
+ * Mass pull to SC6 (~6% Li₂O): (1.35% / 6%) × 78% recovery = 17.55%.
+ *
+ * - Ore reserve 48 Mt / 20 y life → 2.4 Mtpa ore
+ * - Implied SC6 ≈ 2.4 × 17.55% ≈ 421 ktpa
+ * - NSR = $1,900/t SC6 × 17.55% = $333.45/t ore
+ * - Capacity 4.5 Mtpa → ≈ 53% utilization; strip 3.2 → 7.68 Mtpa waste
  */
 export const LITHIUM_ARGENTINA_DEMO: DemoProjectDefinition = {
   id: 'demo-lithium-argentina',
@@ -12,7 +19,7 @@ export const LITHIUM_ARGENTINA_DEMO: DemoProjectDefinition = {
   miningMethod: 'openPit',
   location: 'Salta Province, Argentina',
   country: 'Argentina',
-  productionLabel: '220 ktpa SC6',
+  productionLabel: '2.4 Mtpa ore (~421 ktpa SC6)',
   accent: 'lithium',
   currency: 'USD',
   exchangeRate: 1.0,
@@ -44,8 +51,8 @@ export const LITHIUM_ARGENTINA_DEMO: DemoProjectDefinition = {
     royaltyRate: 3,
     creditRate: 7.0,
     creditYears: 12,
-    unitPrice: 1900,
-    annualProduction: 0.22,
+    unitPrice: 333.45,
+    annualProduction: 2.4,
     plantProcessingRate: 88,
     equipmentCost: 145,
     facilityCost: 310,
@@ -61,7 +68,7 @@ export const LITHIUM_ARGENTINA_DEMO: DemoProjectDefinition = {
     forestCost: 1.5,
     landCost: 3.5,
     rehabilitationCost: 8.0,
-    annualStrippingVolume: 11.5,
+    annualStrippingVolume: 7.68,
     strippingUnitCost: 1.75,
     contractorStrippingCost: 0,
     plantOperatingCost: 48,

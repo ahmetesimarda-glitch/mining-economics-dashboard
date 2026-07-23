@@ -3,7 +3,13 @@ import { buildParams, equipmentRow, standardMineStaff } from '../helpers';
 
 /**
  * Sweden open-pit rare earth — Kiruna / Norra Kärr style TREO project.
- * Mixed rare-earth concentrate: 12 ktpa TREO @ $28,000/t.
+ *
+ * Engine convention: **ore throughput (Mt/year)** + TREO NSR ($/t ore), not payable TREO Mt.
+ *
+ * - Ore reserve 36 Mt / 18 y life → 2.0 Mtpa ore
+ * - 0.55% TREO × 72% recovery → ≈ 7.9 ktpa TREO
+ * - NSR = $28,000/t TREO × 0.55% × 72% = $110.88/t ore
+ * - Capacity 3.5 Mtpa → ≈ 57% utilization; strip 4.5 → 9.0 Mtpa waste
  */
 export const RARE_EARTH_SWEDEN_DEMO: DemoProjectDefinition = {
   id: 'demo-rare-earth-sweden',
@@ -12,7 +18,7 @@ export const RARE_EARTH_SWEDEN_DEMO: DemoProjectDefinition = {
   miningMethod: 'openPit',
   location: 'Norrbotten County, Sweden',
   country: 'Sweden',
-  productionLabel: '12 ktpa TREO',
+  productionLabel: '2.0 Mtpa ore (~8 ktpa TREO)',
   accent: 'rareEarth',
   currency: 'USD',
   exchangeRate: 1.0,
@@ -44,8 +50,8 @@ export const RARE_EARTH_SWEDEN_DEMO: DemoProjectDefinition = {
     royaltyRate: 2,
     creditRate: 5.5,
     creditYears: 12,
-    unitPrice: 28_000,
-    annualProduction: 0.012,
+    unitPrice: 110.88,
+    annualProduction: 2.0,
     plantProcessingRate: 86,
     equipmentCost: 155,
     facilityCost: 285,
@@ -61,7 +67,7 @@ export const RARE_EARTH_SWEDEN_DEMO: DemoProjectDefinition = {
     forestCost: 3.5,
     landCost: 2.5,
     rehabilitationCost: 11,
-    annualStrippingVolume: 14,
+    annualStrippingVolume: 9.0,
     strippingUnitCost: 2.1,
     contractorStrippingCost: 0,
     plantOperatingCost: 52,

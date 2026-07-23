@@ -3,7 +3,14 @@ import { buildParams, equipmentRow, standardMineStaff } from '../helpers';
 
 /**
  * Peru underground zinc-lead-silver — Central Andes.
- * Payable Zn metal in concentrate: 95 ktpa @ $2,850/t + Pb/Ag credits.
+ *
+ * Engine convention: **ore throughput (Mt/year)** + Zn NSR ($/t ore), not payable metal Mt.
+ * Pb/Ag remain in byProductRevenue.
+ *
+ * - Ore reserve 28 Mt / 16 y life → 1.75 Mtpa ore
+ * - 6.5% Zn × 89% recovery → ≈ 101 ktpa payable Zn
+ * - NSR = $2,850/t Zn × 6.5% × 89% = $164.87/t ore
+ * - Capacity 2.2 Mtpa → ≈ 80% utilization
  */
 export const ZINC_PERU_DEMO: DemoProjectDefinition = {
   id: 'demo-zinc-peru',
@@ -12,7 +19,7 @@ export const ZINC_PERU_DEMO: DemoProjectDefinition = {
   miningMethod: 'underground',
   location: 'Pasco Region, Peru',
   country: 'Peru',
-  productionLabel: '95 ktpa Zn',
+  productionLabel: '1.75 Mtpa ore (~101 ktpa Zn)',
   accent: 'zinc',
   currency: 'USD',
   exchangeRate: 1.0,
@@ -44,8 +51,8 @@ export const ZINC_PERU_DEMO: DemoProjectDefinition = {
     royaltyRate: 4.5,
     creditRate: 7.0,
     creditYears: 10,
-    unitPrice: 2_850,
-    annualProduction: 0.095,
+    unitPrice: 164.87,
+    annualProduction: 1.75,
     plantProcessingRate: 90,
     equipmentCost: 98,
     facilityCost: 125,

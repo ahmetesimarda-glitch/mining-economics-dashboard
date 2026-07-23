@@ -13,7 +13,7 @@ export const GOLD_TURKIYE_DEMO: DemoProjectDefinition = {
   miningMethod: 'underground',
   location: 'İzmir Province, Türkiye',
   country: 'Türkiye',
-  productionLabel: '2.4 tpa Au',
+  productionLabel: '0.55 Mtpa ore (~2.4 tpa Au)',
   accent: 'gold',
   currency: 'USD',
   exchangeRate: 1.0,

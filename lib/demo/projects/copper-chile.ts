@@ -1,7 +1,16 @@
 import type { DemoProjectDefinition } from '../types';
 import { buildParams, equipmentRow, standardMineStaff } from '../helpers';
 
-/** Chile open-pit copper porphyry — mid-tier Andean operation. */
+/**
+ * Chile open-pit copper porphyry — mid-tier Andean operation.
+ *
+ * Engine convention: **ore throughput (Mt/year)** + Cu NSR ($/t ore), not payable metal Mt.
+ *
+ * - Ore reserve 120 Mt / 25 y life → 4.8 Mtpa ore
+ * - 0.65% Cu × 88% recovery → ≈ 27.5 ktpa payable Cu
+ * - NSR = $9,200/t Cu × 0.65% × 88% = $52.62/t ore
+ * - Capacity 6.0 Mtpa → 80% utilization; strip 2.8 → 13.44 Mtpa waste
+ */
 export const COPPER_CHILE_DEMO: DemoProjectDefinition = {
   id: 'demo-copper-mine',
   name: 'Atacama Copper Project',
@@ -9,7 +18,7 @@ export const COPPER_CHILE_DEMO: DemoProjectDefinition = {
   miningMethod: 'openPit',
   location: 'Atacama Region, Chile',
   country: 'Chile',
-  productionLabel: '85 ktpa Cu',
+  productionLabel: '4.8 Mtpa ore (~27 ktpa Cu)',
   accent: 'copper',
   currency: 'USD',
   exchangeRate: 1.0,
@@ -41,8 +50,8 @@ export const COPPER_CHILE_DEMO: DemoProjectDefinition = {
     royaltyRate: 5,
     creditRate: 6.5,
     creditYears: 12,
-    unitPrice: 9200,
-    annualProduction: 0.085,
+    unitPrice: 52.62,
+    annualProduction: 4.8,
     plantProcessingRate: 92,
     equipmentCost: 185,
     facilityCost: 320,
@@ -58,7 +67,7 @@ export const COPPER_CHILE_DEMO: DemoProjectDefinition = {
     forestCost: 2.5,
     landCost: 4.0,
     rehabilitationCost: 12.0,
-    annualStrippingVolume: 42,
+    annualStrippingVolume: 13.44,
     strippingUnitCost: 1.85,
     contractorStrippingCost: 0,
     plantOperatingCost: 35.0,

@@ -3,7 +3,13 @@ import { buildParams, equipmentRow, standardMineStaff } from '../helpers';
 
 /**
  * Canada underground nickel sulphide — Sudbury-style.
- * Payable Ni in concentrate: 35 ktpa @ $18,500/t.
+ *
+ * Engine convention: **ore throughput (Mt/year)** + Ni NSR ($/t ore), not payable metal Mt.
+ *
+ * - Ore reserve 42 Mt / 18 y life → 2.333 Mtpa ore
+ * - 1.85% Ni × 86% recovery → ≈ 37 ktpa payable Ni
+ * - NSR = $18,500/t Ni × 1.85% × 86% = $294.34/t ore
+ * - Capacity 2.8 Mtpa → ≈ 83% utilization
  */
 export const NICKEL_CANADA_DEMO: DemoProjectDefinition = {
   id: 'demo-nickel-canada',
@@ -12,7 +18,7 @@ export const NICKEL_CANADA_DEMO: DemoProjectDefinition = {
   miningMethod: 'underground',
   location: 'Ontario, Canada',
   country: 'Canada',
-  productionLabel: '35 ktpa Ni',
+  productionLabel: '2.333 Mtpa ore (~37 ktpa Ni)',
   accent: 'nickel',
   currency: 'USD',
   exchangeRate: 1.0,
@@ -44,8 +50,8 @@ export const NICKEL_CANADA_DEMO: DemoProjectDefinition = {
     royaltyRate: 4,
     creditRate: 6.25,
     creditYears: 12,
-    unitPrice: 18_500,
-    annualProduction: 0.035,
+    unitPrice: 294.34,
+    annualProduction: 2.333,
     plantProcessingRate: 91,
     equipmentCost: 165,
     facilityCost: 210,
