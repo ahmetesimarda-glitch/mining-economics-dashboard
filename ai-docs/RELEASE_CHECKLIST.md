@@ -65,16 +65,18 @@
 ## 9. Authentication
 
 **Purpose:** verify the intended access model.
-- **How to verify:** authentication is **not yet implemented** (no auth models/routes; `next-auth` installed but unused — see `ROADMAP.md`). Confirm the deployment target is acceptable as effectively open, or that auth was added as an additive change with `NEXTAUTH_URL`/`NEXTAUTH_SECRET` configured.
-- **Common failure causes:** exposing an unauthenticated app publicly by mistake; misconfigured `NEXTAUTH_URL` if auth was added.
+- **How to verify:** authentication is **not yet implemented** (no auth models/routes; `next-auth` installed but unused — see `ROADMAP.md` §5). Confirm the deployment target is acceptable as effectively open, or that auth was added as an additive change with `NEXTAUTH_URL`/`NEXTAUTH_SECRET` configured and user **roles** present.
+- **Pre-auth internal pages:** `/internal/*` summary surfaces may still use the temporary `INTERNAL_ANALYTICS_ENABLED` gate. Keep that behavior until Authentication is complete; do not “fix” it with a standalone RBAC patch.
+- **After Authentication:** `INTERNAL_ANALYTICS_ENABLED` must be removed; `/internal/*` must require an authenticated **Administrator**. Unauthenticated → login redirect; authenticated non-admin → 403 (or authz redirect), not 404.
+- **Common failure causes:** exposing an unauthenticated app publicly by mistake; misconfigured `NEXTAUTH_URL` if auth was added; leaving the env gate after auth ships; masking forbidden internal pages as 404.
 - **Recommended fixes:** restrict network exposure, or implement auth per the roadmap before public launch. **(Blocker only if the deployment requires access control.)**
 
 ## 10. Authorization
 
-**Purpose:** verify data isolation expectations.
-- **How to verify:** with no auth, all projects are visible to anyone with access — confirm this is acceptable. If auth was added, confirm `/api/projects/**` queries are scoped to the owner and cross-tenant access is blocked.
-- **Common failure causes:** listing/reading another user's project; unscoped queries.
-- **Recommended fixes:** add ownership scoping (`userId`) after auth. **(Blocker for multi-user deployments.)**
+**Purpose:** verify data isolation and role expectations.
+- **How to verify:** with no auth, all projects are visible to anyone with access — confirm this is acceptable. If auth was added, confirm `/api/projects/**` queries are scoped to the owner and cross-tenant access is blocked; confirm `/internal/**` is Administrator-only per `ROADMAP.md` §5–§6.
+- **Common failure causes:** listing/reading another user's project; unscoped queries; non-admin access to internal analytics.
+- **Recommended fixes:** add ownership scoping (`userId`) and role checks after auth. **(Blocker for multi-user deployments.)**
 
 ## 11. Environment Variables
 

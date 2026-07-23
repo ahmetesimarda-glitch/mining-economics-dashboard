@@ -127,7 +127,7 @@ Master Data UI/API live under `app/master-data/**` and `app/api/master-data/**`.
 12. **AI Analysis** (`/api/projects/[id]/ai-analysis`, `ai-analysis-panel.tsx`): streaming LLM-generated narrative feasibility assessment.
 13. **Comparison** (`app/compare`): side-by-side comparison of multiple projects.
 14. **Exports**: **Excel** (`/api/projects/[id]/xlsx` via `lib/reports/excel/` + ExcelJS) and **PDF** (`/api/projects/[id]/pdf` via `lib/reports/pdf/` + local Puppeteer).
-15. **Internal demo analytics**: `/internal/demo-analytics` (pre-auth visitor events).
+15. **Internal demo analytics**: `/internal/demo-analytics` (pre-auth visitor events). Temporary production gate: `INTERNAL_ANALYTICS_ENABLED`. After Authentication: Administrator RBAC only (`ROADMAP.md` §5).
 16. **Mining Market Insights**: placeholder news architecture on the dashboard (`lib/news/`).
 15. **Internationalization**: full TR/EN switching via `lib/i18n`.
 16. **Master Data — Equipment Catalog** (`/master-data/equipment`, `/api/master-data/equipment`): commercial CRUD catalog (~445 OEM seed rows) with OEM-aware search, manufacturer/category/power/active filters, sort + page size, table/card views, detail drawer, facets endpoint, and snapshot Add-to-Project into the fleet. Seed architecture lives under `lib/master-data/seed/` (regenerable via `scripts/generate-equipment-catalog.py`).

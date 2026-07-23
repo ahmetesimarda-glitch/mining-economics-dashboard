@@ -110,11 +110,12 @@ The economic semantics (Year-0 outflow, royalty basis, tax gating, discounting, 
 
 ## 8b. Demo Analytics (pre-auth)
 
-- **Route:** `/internal/demo-analytics` (hidden admin precursor; no authentication yet).
+- **Route:** `/internal/demo-analytics` (hidden admin precursor; authentication not yet implemented).
 - **Storage:** `DemoAnalyticsEvent` (visitor UUID, event type, optional projectId, path, metadata, timestamp).
 - **Client:** `lib/analytics/` — stable visitor UUID in `localStorage`, fire-and-forget `trackAnalyticsEvent`, session bootstrap.
 - **API:** `POST /api/internal/analytics/events`, `GET /api/internal/analytics/summary`.
-- After authentication lands, this page becomes the Admin Dashboard (ownership-scoped queries).
+- **Temporary production gate (pre-auth only):** summary page + `GET .../summary` use `isInternalAnalyticsEnabled()` / `INTERNAL_ANALYTICS_ENABLED` (`lib/analytics/gate.ts`). Local `NODE_ENV !== 'production'` remains open for operators. Event ingestion stays available for demo telemetry.
+- **Authentication architecture (do not implement as a standalone change):** when Authentication + roles ship, remove the env flag entirely and protect **all** `/internal/*` routes with **Administrator** RBAC — unauthenticated → login redirect; authenticated non-admin → **403** (or authz redirect), never a masked 404; only Administrator may view internal analytics/admin pages. See `ROADMAP.md` §5–§6.
 
 ---
 

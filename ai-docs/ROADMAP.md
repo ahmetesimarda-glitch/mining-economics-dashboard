@@ -109,17 +109,25 @@ See “Completed modules” above. These are considered stable and must be prote
 ## Medium Term
 
 ### 5. Authentication (Google SSO or credentials)
-- **Purpose:** introduce `next-auth` (already installed) with Prisma adapter tables and a `MiningProject.userId` owner relation.
+- **Purpose:** introduce `next-auth` (already installed) with Prisma adapter tables and a `MiningProject.userId` owner relation. Include an explicit **role** on the user model (at minimum `USER` | `ADMINISTRATOR`).
 - **Business value:** the single prerequisite for SaaS, sharing, and any public deployment.
-- **Complexity:** L. **Dependencies:** additive schema (User/Account/Session/VerificationToken + nullable `userId` backfilled), validation hardening. **Priority:** P0 for any public/SaaS deployment.
+- **Complexity:** L. **Dependencies:** additive schema (User/Account/Session/VerificationToken + role + nullable `userId` backfilled), validation hardening. **Priority:** P0 for any public/SaaS deployment.
 - **Order:** first medium-term item; everything SaaS depends on it.
 - **Constraint:** additive migration only; existing projects must keep working with a null/owner-backfilled `userId`.
+- **Internal routes (must ship with Authentication — not as a standalone fix):**
+  - Until Authentication is complete, keep the temporary `INTERNAL_ANALYTICS_ENABLED` env gate (`lib/analytics/gate.ts`) for `/internal/*` summary surfaces. **Do not** replace that gate early.
+  - When Authentication is fully implemented, **remove** `INTERNAL_ANALYTICS_ENABLED` and delete/`deprecate` `isInternalAnalyticsEnabled`.
+  - Protect **all** `/internal/*` pages and related admin APIs with authenticated **Administrator** role checks (RBAC), not an environment flag.
+  - **Unauthenticated** users → redirect to the login page.
+  - **Authenticated non-admin** users → proper authorization denial (**403** or an authorization redirect), **never** a fake **404**.
+  - Only users with the **Administrator** role may access internal analytics and other internal pages.
+  - Event ingestion (`POST /api/internal/analytics/events`) may remain available for product telemetry, but summary/admin reads must be Administrator-only after auth lands.
 
 ### 6. Authorization & ownership scoping
-- **Purpose:** scope all `/api/projects/**` queries to the authenticated owner; block cross-tenant access.
+- **Purpose:** scope all `/api/projects/**` queries to the authenticated owner; block cross-tenant access. Enforce role-based access for `/internal/**` (Administrator-only) as specified under Authentication.
 - **Business value:** data isolation — mandatory before multi-user.
-- **Complexity:** M. **Dependencies:** authentication. **Priority:** P0 (after auth).
-
+- **Complexity:** M. **Dependencies:** authentication (including roles). **Priority:** P0 (after auth).
+- **Acceptance (internal):** env-flag gate gone; RBAC only; 401/login redirect for anonymous; 403 (or authz redirect) for non-admin; Administrator succeeds.
 ### 7. Background job runner for heavy analytics
 - **Purpose:** move Monte Carlo / large sensitivity off the request thread with progress streaming (reuse the existing SSE pattern from AI analysis).
 - **Business value:** removes latency ceiling; enables larger simulations.

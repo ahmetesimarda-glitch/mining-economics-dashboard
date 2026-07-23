@@ -100,7 +100,7 @@
 6. **`prisma db push` + catalog seed on every `yarn build`** — convenient for demo hosts; risky for shared prod DBs — split migrate/seed in 1.1.
 7. **Unused dependencies / dead shadcn components** — safe prune in 1.1 dependency diet.
 8. **Placeholder mining news widget** still present (explicitly labeled).
-9. **Event ingestion `/api/internal/analytics/events` remains open** (needed for demo telemetry); summary UI gated. Add auth/rate-limit in 1.1.
+9. **Event ingestion `/api/internal/analytics/events` remains open** (needed for demo telemetry); summary UI gated by temporary `INTERNAL_ANALYTICS_ENABLED`. **Do not** replace that gate with a standalone RBAC fix — when Authentication lands, remove the flag and protect all `/internal/*` with Administrator roles (unauthenticated → login; non-admin → 403, not 404). See `ROADMAP.md` §5–§6.
 10. Minor residual Turkish in code **comments** only (not user-visible).
 
 ---
@@ -136,7 +136,7 @@
 
 **What belongs in Version 1.1 (not 1.0)**
 
-- Authentication / multi-user ownership
+- Authentication / multi-user ownership **with roles** (`USER` | `ADMINISTRATOR`), including replacing `INTERNAL_ANALYTICS_ENABLED` with Administrator RBAC on all `/internal/*` routes (login redirect / 403 — never masked 404)
 - Zod validation on project write APIs
 - Bilingual AI analysis prompts + locale-aware PDF/Excel/CSV
 - Prisma composite unique for equipment OEM+model
