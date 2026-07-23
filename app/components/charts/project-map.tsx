@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Map as LeafletMap, Marker as LeafletMarker } from 'leaflet';
+import { useLanguage } from '@/lib/i18n/context';
 
 interface ProjectMapProps {
   latitude: number;
@@ -15,6 +16,7 @@ const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 export function ProjectMap({ latitude, longitude, name }: ProjectMapProps) {
+  const { t } = useLanguage();
   const mapRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const mapInstance = useRef<LeafletMap | null>(null);
@@ -105,9 +107,8 @@ export function ProjectMap({ latitude, longitude, name }: ProjectMapProps) {
   if (latitude === 0 && longitude === 0) {
     return (
       <div className="flex items-center justify-center h-[300px] rounded-lg bg-muted/30 border border-border/30">
-        <p className="text-sm text-muted-foreground">
-          Konum bilgisi girilmedi. Proje düzenleme sayfasından konum araması veya enlem/boylam
-          giriniz.
+        <p className="text-sm text-muted-foreground text-center px-4">
+          {t('loc.mapEmpty')}
         </p>
       </div>
     );

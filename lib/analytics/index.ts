@@ -15,3 +15,4 @@ export {
 export { trackAnalyticsEvent, type TrackEventOptions } from './track';
 export { bootstrapAnalyticsSession } from './session';
 export { buildAnalyticsSummary, type AnalyticsSummary } from './summary';
+export { isInternalAnalyticsEnabled } from './gate';

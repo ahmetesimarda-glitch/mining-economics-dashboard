@@ -17,12 +17,12 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     const id = context?.params?.id;
     const item = await prisma.equipmentCatalogItem.findUnique({ where: { id } });
     if (!item) {
-      return NextResponse.json({ error: 'Ekipman bulunamadı' }, { status: 404 });
+      return NextResponse.json({ error: 'Record not found' }, { status: 404 });
     }
     return NextResponse.json(item);
   } catch (error: unknown) {
     console.error('Equipment catalog get:', error);
-    const message = error instanceof Error ? error.message : 'Okunamadı';
+    const message = 'Record could not be read';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       select: { id: true, code: true },
     });
     if (!existing) {
-      return NextResponse.json({ error: 'Ekipman bulunamadı' }, { status: 404 });
+      return NextResponse.json({ error: 'Record not found' }, { status: 404 });
     }
 
     const body: unknown = await request.json();
@@ -53,7 +53,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         select: { id: true },
       });
       if (conflict && conflict.id !== id) {
-        return NextResponse.json({ error: 'Bu kod zaten kullanılıyor' }, { status: 409 });
+        return NextResponse.json({ error: 'This code is already in use' }, { status: 409 });
       }
     }
 
@@ -67,7 +67,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     });
     if (duplicate) {
       return NextResponse.json(
-        { error: 'Bu üretici ve model zaten katalogda mevcut' },
+        { error: 'This manufacturer and model already exist in the catalog' },
         { status: 409 }
       );
     }
@@ -79,7 +79,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     return NextResponse.json(updated);
   } catch (error: unknown) {
     console.error('Equipment catalog update:', error);
-    const message = error instanceof Error ? error.message : 'Güncellenemedi';
+    const message = 'Record could not be updated';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -95,14 +95,14 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       select: { id: true },
     });
     if (!existing) {
-      return NextResponse.json({ error: 'Ekipman bulunamadı' }, { status: 404 });
+      return NextResponse.json({ error: 'Record not found' }, { status: 404 });
     }
 
     await prisma.equipmentCatalogItem.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error('Equipment catalog delete:', error);
-    const message = error instanceof Error ? error.message : 'Silinemedi';
+    const message = 'Record could not be deleted';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

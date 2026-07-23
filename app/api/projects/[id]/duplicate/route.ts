@@ -23,7 +23,7 @@ export async function POST(
       },
     });
     if (!project) {
-      return NextResponse.json({ error: 'Proje bulunamadı' }, { status: 404 });
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     const p = project as any;
@@ -50,6 +50,6 @@ export async function POST(
     return NextResponse.json(newProject, { status: 201 });
   } catch (error: any) {
     console.error('Proje kopyalama hatası:', error);
-    return NextResponse.json({ error: 'Proje kopyalanamadı' }, { status: 500 });
+    return NextResponse.json({ error: 'Project could not be duplicated' }, { status: 500 });
   }
 }

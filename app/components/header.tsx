@@ -34,7 +34,7 @@ export function Header() {
           <span className="font-display text-lg font-bold tracking-tight">{t('nav.brand')}</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-1">
           {NAV_ITEMS.map((item: any) => {
             const Icon = item?.icon;
             const isActive = pathname === item?.href ||
@@ -44,13 +44,13 @@ export function Header() {
                 key={item?.href}
                 href={item?.href ?? '/'}
                 className={cn(
-                  'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  'flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs xl:text-sm font-medium transition-colors whitespace-nowrap',
                   isActive
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 )}
               >
-                {Icon && <Icon className="h-4 w-4" />}
+                {Icon && <Icon className="h-4 w-4 shrink-0" aria-hidden />}
                 {item?.label}
               </Link>
             );
@@ -60,19 +60,24 @@ export function Header() {
         </nav>
 
         <button
+          type="button"
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-2 rounded-lg hover:bg-accent"
+          className="lg:hidden p-2 rounded-lg hover:bg-accent"
+          aria-label={mobileOpen ? t('nav.closeMenu') : t('nav.openMenu')}
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-nav"
         >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {mobileOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
         </button>
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-xl">
-          <nav className="flex flex-col p-4 gap-1">
+        <div id="mobile-nav" className="lg:hidden border-t border-border/40 bg-background/95 backdrop-blur-xl">
+          <nav className="flex flex-col p-4 gap-1" aria-label={t('nav.brand')}>
             {NAV_ITEMS.map((item: any) => {
               const Icon = item?.icon;
-              const isActive = pathname === item?.href;
+              const isActive = pathname === item?.href ||
+                (item?.href !== '/' && pathname?.startsWith?.(item?.href ?? ''));
               return (
                 <Link
                   key={item?.href}

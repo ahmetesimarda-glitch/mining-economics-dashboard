@@ -18,7 +18,7 @@ export async function GET(
       where: { id: params?.id },
     });
     if (!project) {
-      return NextResponse.json({ error: 'Proje bulunamadı' }, { status: 404 });
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     const p: ProjectParams = {
@@ -70,6 +70,6 @@ export async function GET(
     return NextResponse.json({ financing, depreciation, phases });
   } catch (error: any) {
     console.error('Financing error:', error);
-    return NextResponse.json({ error: error?.message ?? 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

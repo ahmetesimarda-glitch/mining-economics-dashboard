@@ -22,8 +22,7 @@ export async function GET() {
     });
   } catch (error: unknown) {
     console.error('Equipment catalog ensure error:', error);
-    const message =
-      error instanceof Error ? error.message : 'Equipment catalog could not be prepared';
+    const message = 'Equipment catalog could not be prepared';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

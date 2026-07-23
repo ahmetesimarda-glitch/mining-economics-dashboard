@@ -126,30 +126,38 @@ export function ProjectCard({ project, index, onDelete, onDuplicate }: ProjectCa
               </p>
             </div>
           </div>
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
             <button
+              type="button"
               onClick={handleEditClick}
+              aria-label={t('card.edit')}
+              title={t('card.edit')}
               className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
             >
-              <Edit className="h-3.5 w-3.5" />
+              <Edit className="h-3.5 w-3.5" aria-hidden />
             </button>
             <button
+              type="button"
               onClick={handleDuplicate}
+              aria-label={t('card.duplicate')}
               title={t('card.duplicate')}
               className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
             >
               {duplicating ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
               ) : (
-                <Copy className="h-3.5 w-3.5" />
+                <Copy className="h-3.5 w-3.5" aria-hidden />
               )}
             </button>
             {!isDemo ? (
               <button
+                type="button"
                 onClick={handleDelete}
+                aria-label={t('card.delete')}
+                title={t('card.delete')}
                 className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-3.5 w-3.5" aria-hidden />
               </button>
             ) : null}
           </div>

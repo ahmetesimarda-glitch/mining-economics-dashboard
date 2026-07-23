@@ -56,12 +56,12 @@ export async function GET(
       },
     });
     if (!project) {
-      return NextResponse.json({ error: 'Proje bulunamadı' }, { status: 404 });
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
     return NextResponse.json(project);
   } catch (error: any) {
     console.error('GET project error:', error);
-    return NextResponse.json({ error: error?.message ?? 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
 
@@ -196,7 +196,7 @@ export async function PUT(
     return NextResponse.json(project);
   } catch (error: any) {
     console.error('PUT project error:', error);
-    return NextResponse.json({ error: error?.message ?? 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
 
@@ -215,6 +215,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('DELETE project error:', error);
-    return NextResponse.json({ error: error?.message ?? 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

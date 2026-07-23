@@ -85,6 +85,6 @@ export async function GET() {
     return NextResponse.json(data);
   } catch (error: any) {
     console.error('Piyasa verisi hatası:', error);
-    return NextResponse.json({ error: 'Piyasa verileri alınamadı' }, { status: 500 });
+    return NextResponse.json({ error: 'Market data could not be loaded' }, { status: 500 });
   }
 }

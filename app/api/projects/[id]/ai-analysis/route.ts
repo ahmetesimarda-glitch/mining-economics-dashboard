@@ -70,7 +70,7 @@ export async function POST(
       },
     });
     if (!project) {
-      return NextResponse.json({ error: 'Proje bulunamad\u0131' }, { status: 404 });
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     // Gather all other projects for benchmarking
@@ -289,9 +289,9 @@ Sadece ge\u00e7erli JSON d\u00f6nd\u00fcr, ba\u015fka metin ekleme. Code block k
       const errText = await response.text();
       console.error('LLM API error:', errText);
       if (errText?.includes('no remaining credits') || errText?.includes('credit')) {
-        return NextResponse.json({ error: 'API kredi limiti dolmuş. Lütfen daha sonra tekrar deneyin.' }, { status: 429 });
+        return NextResponse.json({ error: 'AI analysis credit limit reached. Please try again later.' }, { status: 429 });
       }
-      return NextResponse.json({ error: 'AI analiz servisi yanıt vermedi. Lütfen tekrar deneyin.' }, { status: 500 });
+      return NextResponse.json({ error: 'AI analysis service did not respond. Please try again.' }, { status: 500 });
     }
 
     // Stream the response
@@ -395,7 +395,7 @@ Sadece ge\u00e7erli JSON d\u00f6nd\u00fcr, ba\u015fka metin ekleme. Code block k
           }
         } catch (error: any) {
           console.error('Stream error:', error);
-          const errData = JSON.stringify({ status: 'error', message: error?.message ?? 'Stream hatası' });
+          const errData = JSON.stringify({ status: 'error', message: 'Stream error' });
           controller.enqueue(encoder.encode(`data: ${errData}\n\n`));
         } finally {
           controller.close();
@@ -412,6 +412,6 @@ Sadece ge\u00e7erli JSON d\u00f6nd\u00fcr, ba\u015fka metin ekleme. Code block k
     });
   } catch (error: any) {
     console.error('AI Analysis error:', error);
-    return NextResponse.json({ error: error?.message ?? 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

@@ -15,8 +15,7 @@ export async function GET() {
     return NextResponse.json({ ...result, totalInDb });
   } catch (error: unknown) {
     console.error('Country catalog ensure error:', error);
-    const message =
-      error instanceof Error ? error.message : 'Country catalog could not be prepared';
+    const message = 'Country catalog could not be prepared';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

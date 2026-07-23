@@ -86,14 +86,16 @@ const NUMERIC_FORM_KEYS = [
 ] as const;
 
 function FormField({ label, name, value, onChange, type = 'number', suffix, icon: Icon, placeholder, className: fieldClassName }: any) {
+  const inputId = `field-${name}`;
   return (
     <div className={cn('space-y-1.5', fieldClassName)}>
-      <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-        {Icon && <Icon className="h-3.5 w-3.5" />}
+      <label htmlFor={inputId} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        {Icon && <Icon className="h-3.5 w-3.5" aria-hidden />}
         {label}
       </label>
       <div className="relative">
         <input
+          id={inputId}
           type={type}
           name={name}
           value={value ?? ''}

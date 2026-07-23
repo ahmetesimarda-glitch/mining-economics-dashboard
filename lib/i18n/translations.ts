@@ -1086,6 +1086,29 @@ export const translations: Record<Locale, Record<string, string>> = {
     'catfield.gallerySuitability': 'Galeri Uygunluğu',
     'catfield.productionImpactGeneral': 'Üretim Etkisi',
 
+    // === NAV A11Y / CARD ACTIONS ===
+    'nav.openMenu': 'Menüyü aç',
+    'nav.closeMenu': 'Menüyü kapat',
+    'card.edit': 'Projeyi düzenle',
+    'card.delete': 'Projeyi sil',
+
+    // === COMMON / ERROR BOUNDARIES ===
+    'common.loading': 'Yükleniyor…',
+    'error.pageTitle': 'Bir şeyler ters gitti',
+    'error.pageDescription': 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin veya panoya dönün.',
+    'error.notFoundTitle': 'Sayfa bulunamadı',
+    'error.notFoundDescription': 'Aradığınız sayfa mevcut değil veya taşınmış olabilir.',
+    'error.tryAgain': 'Tekrar dene',
+    'error.goHome': 'Panoya dön',
+    'error.ref': 'Referans',
+
+    // === LOCATION SEARCH ===
+    'loc.searchFailed': 'Konum araması başarısız',
+    'loc.placeholder': 'Örn: Santiago, Chile',
+    'loc.clear': 'Aramayı temizle',
+    'loc.hint': 'Seçim konum metnini ve enlem/boylamı otomatik doldurur.',
+    'loc.mapEmpty': 'Konum bilgisi girilmedi. Proje düzenleme sayfasından konum araması veya enlem/boylam giriniz.',
+
     // === LANGUAGE ===
     'lang.tr': 'Türkçe',
     'lang.en': 'English',
@@ -2175,6 +2198,29 @@ export const translations: Record<Locale, Record<string, string>> = {
     'catfield.processingCapacity': 'Processing Capacity',
     'catfield.gallerySuitability': 'Gallery Suitability',
     'catfield.productionImpactGeneral': 'Production Impact',
+
+    // === NAV A11Y / CARD ACTIONS ===
+    'nav.openMenu': 'Open menu',
+    'nav.closeMenu': 'Close menu',
+    'card.edit': 'Edit project',
+    'card.delete': 'Delete project',
+
+    // === COMMON / ERROR BOUNDARIES ===
+    'common.loading': 'Loading…',
+    'error.pageTitle': 'Something went wrong',
+    'error.pageDescription': 'An unexpected error occurred. Please try again or return to the dashboard.',
+    'error.notFoundTitle': 'Page not found',
+    'error.notFoundDescription': 'The page you are looking for does not exist or may have been moved.',
+    'error.tryAgain': 'Try again',
+    'error.goHome': 'Go to dashboard',
+    'error.ref': 'Ref',
+
+    // === LOCATION SEARCH ===
+    'loc.searchFailed': 'Location search failed',
+    'loc.placeholder': 'e.g. Santiago, Chile',
+    'loc.clear': 'Clear search',
+    'loc.hint': 'Selection fills location text and coordinates automatically.',
+    'loc.mapEmpty': 'No location set. Add coordinates or use location search on the project edit page.',
 
     // === LANGUAGE ===
     'lang.tr': 'Türkçe',

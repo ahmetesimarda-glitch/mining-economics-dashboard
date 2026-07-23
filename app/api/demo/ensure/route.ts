@@ -37,7 +37,7 @@ export async function GET() {
     });
   } catch (error: unknown) {
     console.error('Demo ensure error:', error);
-    const message = error instanceof Error ? error.message : 'Demo projects could not be prepared';
+    const message = 'Demo projects could not be prepared';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

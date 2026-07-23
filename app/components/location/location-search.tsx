@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Loader2, MapPin, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,8 @@ interface LocationSearchProps {
  * Does not redesign the form — sits beside existing location fields.
  */
 export function LocationSearch({ onSelect }: LocationSearchProps) {
-  const { locale } = useLanguage();
+  const { t } = useLanguage();
+  const inputId = useId();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<LocationSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -24,8 +25,6 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const tr = locale === 'tr';
 
   const runSearch = useCallback(
     async (q: string) => {
@@ -50,13 +49,13 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
         setOpen(true);
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
-        setError(tr ? 'Konum araması başarısız' : 'Location search failed');
+        setError(t('loc.searchFailed'));
         setResults([]);
       } finally {
         setLoading(false);
       }
     },
-    [tr]
+    [t]
   );
 
   useEffect(() => {
@@ -81,49 +80,56 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
 
   return (
     <div className="relative space-y-1.5">
-      <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-        <Search className="h-3.5 w-3.5" />
-        {tr ? 'Konum ara (ülke / eyalet / şehir)' : 'Search location (country / state / city)'}
+      <label htmlFor={inputId} className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+        <Search className="h-3.5 w-3.5" aria-hidden />
+        {t('form.locationSearch')}
       </label>
       <div className="relative">
         <Input
+          id={inputId}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder={tr ? 'Örn: Santiago, Chile' : 'e.g. Santiago, Chile'}
+          placeholder={t('loc.placeholder')}
           className="pr-16"
           autoComplete="off"
+          aria-autocomplete="list"
+          aria-expanded={open && results.length > 0}
         />
         <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-          {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-hidden />}
           {query && (
             <Button
               type="button"
               variant="ghost"
               size="icon"
               className="h-7 w-7"
+              aria-label={t('loc.clear')}
               onClick={() => {
                 setQuery('');
                 setResults([]);
                 setOpen(false);
               }}
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5" aria-hidden />
             </Button>
           )}
         </div>
       </div>
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs text-destructive" role="alert">{error}</p>}
       {open && results.length > 0 && (
-        <ul className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-md border bg-popover shadow-md">
+        <ul
+          className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-md border bg-popover shadow-md"
+          role="listbox"
+        >
           {results.map((item) => (
-            <li key={item.id}>
+            <li key={item.id} role="option">
               <button
                 type="button"
                 className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
                 onClick={() => handleSelect(item)}
               >
-                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
                 <span className="min-w-0">
                   <span className="block truncate font-medium">{item.label}</span>
                   <span className="block text-xs text-muted-foreground">
@@ -138,11 +144,7 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
           ))}
         </ul>
       )}
-      <p className="text-[11px] text-muted-foreground">
-        {tr
-          ? 'Seçim konum metnini ve enlem/boylamı otomatik doldurur. GIS entegrasyonu için hazır.'
-          : 'Selection fills location text and coordinates. Ready for future GIS integration.'}
-      </p>
+      <p className="text-[11px] text-muted-foreground">{t('loc.hint')}</p>
     </div>
   );
 }

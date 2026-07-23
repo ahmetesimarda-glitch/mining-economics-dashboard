@@ -13,7 +13,7 @@ export async function GET(
       where: { id: params?.id },
     });
     if (!project) {
-      return NextResponse.json({ error: 'Proje bulunamadı' }, { status: 404 });
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     const projectParams: ProjectParams = {
@@ -75,6 +75,6 @@ export async function GET(
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('Sensitivity error:', error);
-    return NextResponse.json({ error: error?.message ?? 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

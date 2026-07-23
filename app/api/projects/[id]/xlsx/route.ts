@@ -30,7 +30,7 @@ export async function GET(
       },
     });
     if (!project) {
-      return NextResponse.json({ error: 'Proje bulunamadı' }, { status: 404 });
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     const p = project as unknown as ProjectParams & Record<string, unknown>;
@@ -75,6 +75,6 @@ export async function GET(
     });
   } catch (error: unknown) {
     console.error('XLSX export hatası:', error);
-    return NextResponse.json({ error: 'Excel dosyası oluşturulamadı' }, { status: 500 });
+    return NextResponse.json({ error: 'Excel export failed' }, { status: 500 });
   }
 }

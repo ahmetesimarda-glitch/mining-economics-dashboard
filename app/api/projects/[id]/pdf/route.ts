@@ -29,7 +29,7 @@ export async function GET(
       },
     });
     if (!project) {
-      return NextResponse.json({ error: 'Proje bulunamadı' }, { status: 404 });
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     const p = project as unknown as ProjectParams & Record<string, unknown>;
@@ -70,7 +70,7 @@ export async function GET(
     });
   } catch (error: unknown) {
     console.error('PDF error:', error);
-    const message = error instanceof Error ? error.message : 'Server error';
+    const message = 'Server error';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

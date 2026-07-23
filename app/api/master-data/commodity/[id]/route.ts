@@ -15,12 +15,12 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       where: { id: context.params.id },
     });
     if (!item) {
-      return NextResponse.json({ error: 'Emtia bulunamadı' }, { status: 404 });
+      return NextResponse.json({ error: 'Record not found' }, { status: 404 });
     }
     return NextResponse.json(item);
   } catch (error: unknown) {
     console.error('Commodity catalog get:', error);
-    const message = error instanceof Error ? error.message : 'Okunamadı';
+    const message = 'Record could not be read';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -32,13 +32,13 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       select: { id: true, code: true },
     });
     if (!existing) {
-      return NextResponse.json({ error: 'Emtia bulunamadı' }, { status: 404 });
+      return NextResponse.json({ error: 'Record not found' }, { status: 404 });
     }
 
     const body: unknown = await request.json();
     const { data, error } = normalizeCommodityCatalogInput(body);
     if (error || !data) {
-      return NextResponse.json({ error: error ?? 'Geçersiz veri' }, { status: 400 });
+      return NextResponse.json({ error: error ?? 'Invalid data' }, { status: 400 });
     }
 
     if (data.code !== existing.code) {
@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         select: { id: true },
       });
       if (clash) {
-        return NextResponse.json({ error: 'Bu kod zaten kullanılıyor' }, { status: 409 });
+        return NextResponse.json({ error: 'This code is already in use' }, { status: 409 });
       }
     }
 
@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     return NextResponse.json(item);
   } catch (error: unknown) {
     console.error('Commodity catalog update:', error);
-    const message = error instanceof Error ? error.message : 'Güncellenemedi';
+    const message = 'Record could not be updated';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -70,13 +70,13 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       select: { id: true },
     });
     if (!existing) {
-      return NextResponse.json({ error: 'Emtia bulunamadı' }, { status: 404 });
+      return NextResponse.json({ error: 'Record not found' }, { status: 404 });
     }
     await prisma.commodityCatalogItem.delete({ where: { id: context.params.id } });
     return NextResponse.json({ ok: true });
   } catch (error: unknown) {
     console.error('Commodity catalog delete:', error);
-    const message = error instanceof Error ? error.message : 'Silinemedi';
+    const message = 'Record could not be deleted';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

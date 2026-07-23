@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error: unknown) {
     console.error('Equipment catalog list:', error);
-    const message = error instanceof Error ? error.message : 'Liste alınamadı';
+    const message = 'Catalog could not be loaded';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       select: { id: true },
     });
     if (existing) {
-      return NextResponse.json({ error: 'Bu kod zaten kullanılıyor' }, { status: 409 });
+      return NextResponse.json({ error: 'This code is already in use' }, { status: 409 });
     }
 
     const duplicate = await prisma.equipmentCatalogItem.findFirst({
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     });
     if (duplicate) {
       return NextResponse.json(
-        { error: 'Bu üretici ve model zaten katalogda mevcut' },
+        { error: 'This manufacturer and model already exist in the catalog' },
         { status: 409 }
       );
     }
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(item, { status: 201 });
   } catch (error: unknown) {
     console.error('Equipment catalog create:', error);
-    const message = error instanceof Error ? error.message : 'Oluşturulamadı';
+    const message = 'Record could not be created';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
