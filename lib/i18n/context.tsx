@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { setFormatLocale } from '@/lib/format';
 import { translations, Locale } from './translations';
 
 interface LanguageContextType {
@@ -25,14 +26,30 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem('app-locale');
       if (saved === 'en' || saved === 'tr') {
         setLocaleState(saved);
+        setFormatLocale(saved);
+        document.documentElement.lang = saved;
+      } else {
+        setFormatLocale('tr');
+        document.documentElement.lang = 'tr';
       }
-    } catch {}
+    } catch {
+      setFormatLocale('tr');
+      document.documentElement.lang = 'tr';
+    }
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    setFormatLocale(locale);
+    document.documentElement.lang = locale;
+  }, [locale, mounted]);
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
+    setFormatLocale(newLocale);
     try {
       localStorage.setItem('app-locale', newLocale);
+      document.documentElement.lang = newLocale;
     } catch {}
   }, []);
 

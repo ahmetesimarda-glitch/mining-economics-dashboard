@@ -458,9 +458,9 @@ export function calculatePersonnelProductivity(
 
 export function calculateScenarioAnalysis(params: ProjectParams): ScenarioResult[] {
   const scenarios: { key: 'pessimistic' | 'normal' | 'optimistic'; label: string; priceFactor: number; costFactor: number; productionFactor: number }[] = [
-    { key: 'pessimistic', label: 'Kötümser', priceFactor: 0.8, costFactor: 1.2, productionFactor: 0.85 },
-    { key: 'normal', label: 'Normal', priceFactor: 1.0, costFactor: 1.0, productionFactor: 1.0 },
-    { key: 'optimistic', label: 'İyimser', priceFactor: 1.2, costFactor: 0.85, productionFactor: 1.1 },
+    { key: 'pessimistic', label: 'Pessimistic', priceFactor: 0.8, costFactor: 1.2, productionFactor: 0.85 },
+    { key: 'normal', label: 'Base Case', priceFactor: 1.0, costFactor: 1.0, productionFactor: 1.0 },
+    { key: 'optimistic', label: 'Optimistic', priceFactor: 1.2, costFactor: 0.85, productionFactor: 1.1 },
   ];
 
   return scenarios.map((sc) => {
@@ -656,11 +656,11 @@ export function calculateRehabilitation(params: ProjectParams): RehabilitationRe
   const years = params?.projectLifeYears ?? 30;
   const annualProvision = years > 0 ? totalCost / years : 0;
   const phases = [
-    { phase: 'Toprak Örtüsü Kaldırma', percentage: 15, cost: totalCost * 0.15 },
-    { phase: 'Arazi Düzenleme', percentage: 25, cost: totalCost * 0.25 },
-    { phase: 'Toprak Serme', percentage: 20, cost: totalCost * 0.20 },
-    { phase: 'Ağaçlandırma/Yeşillendirme', percentage: 25, cost: totalCost * 0.25 },
-    { phase: 'İzleme ve Bakım', percentage: 15, cost: totalCost * 0.15 },
+    { phase: 'Topsoil Removal', percentage: 15, cost: totalCost * 0.15 },
+    { phase: 'Land Contouring', percentage: 25, cost: totalCost * 0.25 },
+    { phase: 'Topsoil Placement', percentage: 20, cost: totalCost * 0.20 },
+    { phase: 'Afforestation/Revegetation', percentage: 25, cost: totalCost * 0.25 },
+    { phase: 'Monitoring and Maintenance', percentage: 15, cost: totalCost * 0.15 },
   ];
   return { totalArea: area, costPerHa, totalCost, annualProvision, phases };
 }
@@ -840,76 +840,76 @@ export function generateRiskMatrix(params: ProjectParams): RiskItem[] {
 
   const risks: RiskItem[] = [
     {
-      id: 'r1', category: 'Finansal', name: 'Maden Fiyat Dalgalanması',
-      description: 'Emtia fiyatlarında beklenmedik düşüş',
+      id: 'r1', category: 'Financial', name: 'Commodity Price Volatility',
+      description: 'Unexpected decline in commodity prices',
       probability: 4, impact: 5, score: 20, level: 'critical',
-      mitigation: 'Vadeli satış sözleşmeleri, fiyat koruması (hedging)',
+      mitigation: 'Forward sales contracts, price hedging',
     },
     {
-      id: 'r2', category: 'Finansal', name: 'Döviz Kuru Riski',
-      description: 'Yerel para biriminde değer kaybı',
+      id: 'r2', category: 'Financial', name: 'FX Risk',
+      description: 'Local currency depreciation',
       probability: 3, impact: 3, score: 9, level: 'medium',
-      mitigation: 'Döviz bazlı gelir yapısı, forward kontratlar',
+      mitigation: 'FX-denominated revenue structure, forward contracts',
     },
     {
-      id: 'r3', category: 'Finansal', name: 'Maliyet Artışı',
-      description: 'İşletme maliyetlerinde enflasyonist artış',
+      id: 'r3', category: 'Financial', name: 'Cost Escalation',
+      description: 'Inflationary increase in operating costs',
       probability: 4, impact: 3, score: 12, level: 'high',
-      mitigation: 'Verimlilik optimizasyonu, uzun vadeli tedarik sözleşmeleri',
+      mitigation: 'Efficiency optimization, long-term supply contracts',
     },
     {
-      id: 'r4', category: 'Teknik', name: 'Rezerv Belirsizliği',
-      description: 'Gerçek rezervlerin tahminden az çıkması',
+      id: 'r4', category: 'Technical', name: 'Reserve Uncertainty',
+      description: 'Actual reserves below estimate',
       probability: reserves > 0 ? 2 : 4, impact: 5, score: 0, level: 'high',
-      mitigation: 'Detaylı sondaj programı, jeoistatistik modelleme',
+      mitigation: 'Detailed drilling program, geostatistical modeling',
     },
     {
-      id: 'r5', category: 'Teknik', name: 'Ekipman Arızası',
-      description: 'Ana üretim ekipmanlarında beklenmedik arıza',
+      id: 'r5', category: 'Technical', name: 'Equipment Failure',
+      description: 'Unexpected failure of primary production equipment',
       probability: 3, impact: 3, score: 9, level: 'medium',
-      mitigation: 'Önleyici bakım programı, yedek ekipman bulundurma',
+      mitigation: 'Preventive maintenance program, spare equipment',
     },
     {
-      id: 'r6', category: 'Teknik', name: 'Tenör Düşüklüğü',
-      description: 'Cevher kalitesinde beklenen altında düşüş',
+      id: 'r6', category: 'Technical', name: 'Grade Decline',
+      description: 'Ore quality below expectations',
       probability: 3, impact: 4, score: 12, level: 'high',
-      mitigation: 'Cevher harmanlama, seçici madencilik, tenör kontrol programı',
+      mitigation: 'Ore blending, selective mining, grade control program',
     },
     {
-      id: 'r7', category: 'Çevresel', name: 'Çevresel İhlal / Ceza',
-      description: 'Çevre mevzuatına uyumsuzluk nedeniyle ceza',
+      id: 'r7', category: 'Environmental', name: 'Environmental Violation / Penalty',
+      description: 'Penalty due to non-compliance with environmental regulations',
       probability: 2, impact: 4, score: 8, level: 'medium',
-      mitigation: 'Çevre yönetim sistemi, düzenli denetim, ISO 14001',
+      mitigation: 'Environmental management system, regular audits, ISO 14001',
     },
     {
-      id: 'r8', category: 'Çevresel', name: 'Su Kirliliği',
-      description: 'Maden suyu deşarjında kirlilik',
+      id: 'r8', category: 'Environmental', name: 'Water Pollution',
+      description: 'Pollution in mine water discharge',
       probability: 2, impact: 5, score: 10, level: 'high',
-      mitigation: 'Su arıtma tesisi, kapalı devre su sistemi',
+      mitigation: 'Water treatment plant, closed-loop water system',
     },
     {
-      id: 'r9', category: 'Operasyonel', name: 'İş Kazası',
-      description: 'Ciddi iş kazası riskleri',
+      id: 'r9', category: 'Operational', name: 'Workplace Accident',
+      description: 'Serious workplace accident risks',
       probability: 2, impact: 5, score: 10, level: 'high',
-      mitigation: 'İSG eğitim programı, kişisel koruyucu donanım, OHSAS 18001',
+      mitigation: 'HSE training program, personal protective equipment, OHSAS 18001',
     },
     {
-      id: 'r10', category: 'Operasyonel', name: 'Nitelikli İşgücü Eksikliği',
-      description: 'Uzman personel temin zorluğu',
+      id: 'r10', category: 'Operational', name: 'Skilled Labor Shortage',
+      description: 'Difficulty recruiting specialist personnel',
       probability: 3, impact: 2, score: 6, level: 'medium',
-      mitigation: 'Rekabetçi ücret politikası, eğitim programları',
+      mitigation: 'Competitive pay policy, training programs',
     },
     {
-      id: 'r11', category: 'Yasal', name: 'Ruhsat / İzin Sorunu',
-      description: 'Maden ruhsatı yenileme veya izin sorunları',
+      id: 'r11', category: 'Legal', name: 'Permit / License Issues',
+      description: 'Mining license renewal or permitting issues',
       probability: 2, impact: 5, score: 10, level: 'high',
-      mitigation: 'Erken başvuru, yasal danışmanlık, çevresel uyum',
+      mitigation: 'Early application, legal counsel, environmental compliance',
     },
     {
-      id: 'r12', category: 'Yasal', name: 'Vergi/Royalti Artışı',
-      description: 'Devlet paylarında beklenmedik artış',
+      id: 'r12', category: 'Legal', name: 'Tax/Royalty Increase',
+      description: 'Unexpected increase in government takes',
       probability: 2, impact: 3, score: 6, level: 'medium',
-      mitigation: 'Senaryo analizi, lobicilik faaliyetleri',
+      mitigation: 'Scenario analysis, lobbying activities',
     },
   ];
 
@@ -936,12 +936,12 @@ export interface ProjectPhase {
 export function generateProjectPhases(params: ProjectParams): ProjectPhase[] {
   const years = params?.projectLifeYears ?? 30;
   return [
-    { name: 'Keşif & Fizibilite', startYear: -2, endYear: 0, color: '#8b5cf6' },
-    { name: 'İnşaat & Kurulum', startYear: 0, endYear: 2, color: '#3b82f6' },
-    { name: 'Üretim (Ramp-up)', startYear: 2, endYear: 4, color: '#f59e0b' },
-    { name: 'Tam Kapasite Üretim', startYear: 4, endYear: Math.max(years - 3, 5), color: '#10b981' },
-    { name: 'Üretim Azalma', startYear: Math.max(years - 3, 5), endYear: years, color: '#ef4444' },
-    { name: 'Kapatma & Rehabilitasyon', startYear: years, endYear: years + 3, color: '#6b7280' },
+    { name: 'Exploration & Feasibility', startYear: -2, endYear: 0, color: '#8b5cf6' },
+    { name: 'Construction & Commissioning', startYear: 0, endYear: 2, color: '#3b82f6' },
+    { name: 'Production (Ramp-up)', startYear: 2, endYear: 4, color: '#f59e0b' },
+    { name: 'Full Capacity Production', startYear: 4, endYear: Math.max(years - 3, 5), color: '#10b981' },
+    { name: 'Production Decline', startYear: Math.max(years - 3, 5), endYear: years, color: '#ef4444' },
+    { name: 'Closure & Rehabilitation', startYear: years, endYear: years + 3, color: '#6b7280' },
   ];
 }
 
