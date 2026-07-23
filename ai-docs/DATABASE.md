@@ -35,7 +35,13 @@ All relations are one-to-many from `MiningProject` to the child tables. There ar
 
 ### Master Data (standalone roots)
 
-`EquipmentCatalogItem` is **not** a child of `MiningProject`. It is the first Master Data catalog table: system reference equipment (manufacturer, model, technical and economic parameters). Projects copy (snapshot) values into `Equipment` rows via the project form; catalog edits never rewrite historical fleets. There is intentionally **no** foreign key from `Equipment` → `EquipmentCatalogItem` in this version.
+Master Data catalogs are **not** children of `MiningProject`. They are independent system reference tables. Projects **snapshot** values at write time; catalog edits never rewrite historical projects. There are intentionally **no** live foreign keys from project rows into catalog rows.
+
+- **`EquipmentCatalogItem`** — OEM equipment; projects snapshot into `Equipment` children.
+- **`CommodityCatalogItem`** — commodity engineering defaults; projects snapshot into `MiningProject` scalars (`mineType` = commodity `code`, price, grade, life, …).
+- **`CountryCatalogItem`** — jurisdiction fiscal/cost/risk defaults; projects snapshot into `MiningProject` (`countryCode`, tax, royalty, discount, energy, FX, rehab, …).
+
+Composition for new projects lives in `lib/master-data/project-defaults.ts` (`composeProjectDefaultsFromMasterData`). Future modules (Fleet Planning, Decision Insights, Benchmarking, Cost Forecasting) should read these tables directly rather than embedding constants in the UI.
 
 ### Demo analytics (standalone)
 
@@ -57,7 +63,7 @@ All relations are one-to-many from `MiningProject` to the child tables. There ar
 
 **Field groups and notable defaults:**
 
-- *Identification & lifecycle:* `name`, `description`, `location`, `commodity`, `miningMethod` (default `"openPit"`), `status` (default `"active"`), `currency` (default `"USD"`).
+- *Identification & lifecycle:* `name`, `location`, `mineType` (commodity catalog code snapshot), `countryCode` (country catalog code snapshot, default `""`), `miningMethod` (default `"openPit"`), `status` (default `"active"`), `currency` (default `"USD"`).
 - *Time horizon & financial rates:* `projectLifeYears` Int default `30`, `discountRate` default `5.82`, `taxRate` default `22.0`, `royaltyRate` default `4.0`, `creditRate` default `4.0`, `creditYears` Int default `10`.
 - *Currency handling:* `exchangeRate` default `1.0`, `manualExchangeRate` Bool default `false`.
 - *Ore & production:* `oreGradeUnit` (default `"%"`), `unitPrice` default `75.0`, `annualProduction` default `2.0`, `productionUnit` (default `"Mt"`), `plantProcessingRate` default `35.0`.
@@ -166,11 +172,31 @@ All relations are one-to-many from `MiningProject` to the child tables. There ar
 
 ### 3.9 EquipmentCatalogItem (Master Data)
 
-**Purpose:** system equipment catalog — the first Master Data entity. Stores manufacturer/model, category, description, optional `imageUrl`, technical specs (payload, bucket, power, weight, fuel L/h, fuel tank — nullable when unknown), economic params (list price with `isPriceEstimated`, useful life, availability, annual maintenance), `powerType`, metadata (`oemWebsite`, `country`, `notes`, `searchAliases`), optional `extraSpecs` JSON, and `isActive` / timestamps.
+**Purpose:** system equipment catalog. Stores manufacturer/model, category, description, optional `imageUrl`, technical specs (payload, bucket, power, weight, fuel L/h, fuel tank — nullable when unknown), economic params (list price with `isPriceEstimated`, useful life, availability, annual maintenance), `powerType`, metadata (`oemWebsite`, `country`, `notes`, `searchAliases`), optional `extraSpecs` JSON, and `isActive` / timestamps.
 
 **Primary key:** `id` (cuid). **Unique:** `code` (stable seed key). **Indexes:** `category`, `isActive`, `manufacturer`, `model`.
 
 **Not related to projects via FK.** The catalog UI and project form snapshot selected catalog rows into `Equipment` children. Catalog edits never rewrite historical fleets.
+
+---
+
+### 3.10 CommodityCatalogItem (Master Data)
+
+**Purpose:** commodity engineering master data — typical price/selling unit, grade and recovery ranges, density, processing and mining methods, mine life, refining/smelting/payability/transport costs, royalty default, environmental risk, color/icon, notes.
+
+**Primary key:** `id` (cuid). **Unique:** `code` (also used as `MiningProject.mineType`). **Indexes:** `isActive`, `name`, `sortOrder`.
+
+**Seed / ensure:** `buildCommodityCatalogSeedRows()` + `seedCommodityCatalogIdempotent`; `GET /api/master-data/commodity/ensure`; build script `scripts/seed-commodity-country-catalogs.ts`.
+
+---
+
+### 3.11 CountryCatalogItem (Master Data)
+
+**Purpose:** country/jurisdiction master data — currency, corporate tax, royalty, inflation, discount recommendation, diesel/electricity/water costs, labour and environmental cost indices, infrastructure rating, investment/ESG/political risk, permitting time, rehabilitation cost per hectare, notes.
+
+**Primary key:** `id` (cuid). **Unique:** `code` (ISO-style; stored on `MiningProject.countryCode`). **Indexes:** `isActive`, `name`, `sortOrder`.
+
+**Seed / ensure:** `buildCountryCatalogSeedRows()` + `seedCountryCatalogIdempotent`; `GET /api/master-data/country/ensure`.
 
 ---
 
@@ -181,7 +207,7 @@ All relations are one-to-many from `MiningProject` to the child tables. There ar
 3. **Read one (GET `/api/projects/[id]`):** loads a single project with its relations; returns 404 with `{ error: 'Proje bulunamadı' }` when missing.
 4. **Update (PUT/PATCH `/api/projects/[id]`):** child collections are replaced using a **delete-and-recreate** strategy inside the update — existing child rows are cleared and rewritten from the incoming payload, and cached result columns are recomputed. This keeps the persisted state consistent with a fresh analysis rather than attempting per-row diffs.
 5. **Delete (DELETE `/api/projects/[id]`):** deleting the `MiningProject` cascades to every child table via `onDelete: Cascade`; no manual child cleanup is required.
-6. **Seeding:** `scripts/seed.ts` (and the safer `scripts/safe-seed.ts`, wired to `prisma db seed` via `tsx --require dotenv/config scripts/safe-seed.ts`) populate demonstration projects and the Equipment Catalog. Seeds are **idempotent upserts only** — never `delete` / `deleteMany`. Equipment Catalog rows (~445 OEM models) upsert by stable `code` via `seedEquipmentCatalogIdempotent` / `buildEquipmentCatalogSeedRows()` — there is **no** `if (count > 0) return` short-circuit (a lone manual test row must not block the master dataset). Manual manufacturer+model collisions are skipped (preserved, no duplicates). Production also self-heals via `GET /api/master-data/equipment/ensure` (catalog UI) and `scripts/seed-equipment-catalog.ts` in the `build` script. The commercial demo portfolio is registered in `lib/demo/catalog.ts` and upserted via `ensureAllDemoProjects` (fixed `demo-*` ids, `status: 'demo'`). Additional sample projects upsert by fixed `seed-*` ids: create with nested children if missing, otherwise update scalars only (child fleets are preserved).
+6. **Seeding:** `scripts/seed.ts` (and the safer `scripts/safe-seed.ts`, wired to `prisma db seed` via `tsx --require dotenv/config scripts/safe-seed.ts`) populate demonstration projects and Master Data catalogs. Seeds are **idempotent upserts only** — never `delete` / `deleteMany`. Equipment Catalog rows (~445 OEM models) upsert by stable `code` via `seedEquipmentCatalogIdempotent`. Commodity and Country catalogs upsert by `code` via `seedCommodityCatalogIdempotent` / `seedCountryCatalogIdempotent`. Production self-heals via ensure endpoints and the build scripts `seed-equipment-catalog.ts` + `seed-commodity-country-catalogs.ts`. The commercial demo portfolio is registered in `lib/demo/catalog.ts` and upserted via `ensureAllDemoProjects` (fixed `demo-*` ids, `status: 'demo'`). Additional sample projects upsert by fixed `seed-*` ids: create with nested children if missing, otherwise update scalars only (child fleets are preserved).
 
 
 ---
@@ -199,7 +225,7 @@ All relations are one-to-many from `MiningProject` to the child tables. There ar
 
 ## 6. Future Expansion Notes
 
-- **Master Data catalogs:** `EquipmentCatalogItem` is the first implemented catalog. Future catalogs (commodity, country, currency, units, fuel types, processing methods, labour categories) should follow the same standalone-root pattern — no FK from projects into catalog rows for live joins. Projects **snapshot** values at write time.
+- **Master Data catalogs:** Equipment, Commodity, and Country are implemented. Remaining reserved kinds (currency, units, fuel types, processing methods, labour categories) should follow the same standalone-root pattern — no FK from projects into catalog rows for live joins. Projects **snapshot** values at write time. Decision Insights / Benchmarking should query Commodity + Country catalogs (and project snapshots) rather than hardcoding engineering constants.
 - **Authentication tables:** `next-auth` and `@next-auth/prisma-adapter` are installed but there are currently **no** `User`/`Account`/`Session`/`VerificationToken` models in the schema. Adding auth means introducing those models (and a `MiningProject.userId` owner relation) as an additive, non-destructive migration. Migrate `/internal/demo-analytics` → Admin Dashboard with ownership filters; keep `DemoAnalyticsEvent` additive.
 - **Mining news / AI brief:** `lib/news/` is placeholder-only. Live commodity/news APIs and AI daily summaries should implement `NewsService` without changing `NewsCard` / dashboard contracts. Optional additive `NewsArticle` persistence later.
 - **GIS:** location remains free-text `location` + lat/lng on `MiningProject`. Future GIS can add normalized country/state/city columns or a `ProjectLocation` child additively; Nominatim search already returns normalized parts.

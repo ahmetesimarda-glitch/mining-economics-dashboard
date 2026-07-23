@@ -157,6 +157,7 @@ export async function PUT(
         equityRatio: body?.equityRatio ?? 100,
         latitude: body?.latitude ?? 0,
         longitude: body?.longitude ?? 0,
+        countryCode: body?.countryCode ?? '',
         ...financialData,
         byProductRevenue,
         ...(cashFlowCreate ? {

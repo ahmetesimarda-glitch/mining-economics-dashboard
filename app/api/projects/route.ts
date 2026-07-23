@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
         equityRatio: body?.equityRatio ?? 100,
         latitude: body?.latitude ?? 0,
         longitude: body?.longitude ?? 0,
+        countryCode: body?.countryCode ?? '',
         npv: analysis?.npv ?? 0,
         irr: analysis?.irr ?? 0,
         paybackPeriod: analysis?.paybackPeriod ?? 0,

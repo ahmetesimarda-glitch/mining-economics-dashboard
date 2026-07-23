@@ -3,7 +3,11 @@ import {
   performFullAnalysis,
   type ProjectParams,
 } from '../lib/calculations';
-import { seedEquipmentCatalogIdempotent } from '../lib/master-data';
+import {
+  seedCommodityCatalogIdempotent,
+  seedCountryCatalogIdempotent,
+  seedEquipmentCatalogIdempotent,
+} from '../lib/master-data';
 import { ensureAllDemoProjects } from '../lib/demo';
 
 const prisma = new PrismaClient();
@@ -923,6 +927,17 @@ async function seedEquipmentCatalog(): Promise<void> {
   );
 }
 
+async function seedCommodityAndCountryCatalogs(): Promise<void> {
+  const commodity = await seedCommodityCatalogIdempotent(prisma);
+  const country = await seedCountryCatalogIdempotent(prisma);
+  console.log(
+    `\u2705 Commodity catalog seeded (idempotent): total=${commodity.total} created=${commodity.created} updated=${commodity.updated} alreadyComplete=${commodity.alreadyComplete}`
+  );
+  console.log(
+    `\u2705 Country catalog seeded (idempotent): total=${country.total} created=${country.created} updated=${country.updated} alreadyComplete=${country.alreadyComplete}`
+  );
+}
+
 /**
  * Idempotent demo-project seed: create if missing, update scalars if present.
  * Never deletes projects or child rows — preserves user edits and unrelated data.
@@ -1118,6 +1133,7 @@ async function seedDemoProject(proj: SeedProject): Promise<void> {
 
 async function main() {
   await seedEquipmentCatalog();
+  await seedCommodityAndCountryCatalogs();
   const demos = await ensureAllDemoProjects(prisma);
   for (const demo of demos) {
     console.log(

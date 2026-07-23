@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Mountain, LayoutDashboard, PlusCircle, BarChart3, Menu, X, TrendingUp, Truck } from 'lucide-react';
+import { Mountain, LayoutDashboard, PlusCircle, BarChart3, Menu, X, TrendingUp, Truck, Gem, Globe2 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -20,6 +20,8 @@ export function Header() {
     { href: '/compare', label: t('nav.compare'), icon: BarChart3 },
     { href: '/market', label: t('nav.market'), icon: TrendingUp },
     { href: '/master-data/equipment', label: t('nav.equipmentCatalog'), icon: Truck },
+    { href: '/master-data/commodity', label: t('nav.commodityCatalog'), icon: Gem },
+    { href: '/master-data/country', label: t('nav.countryCatalog'), icon: Globe2 },
   ];
 
   return (

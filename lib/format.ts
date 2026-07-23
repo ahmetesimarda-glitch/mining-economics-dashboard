@@ -28,20 +28,31 @@ export function formatYear(value: number | null | undefined): string {
   return `${v.toFixed(1)} yıl`;
 }
 
+/** Fallback labels when Commodity Master Data is unavailable. Prefer catalog API. */
 export const MINE_TYPES = [
-  { value: 'lignite', label: 'Linyit' },
-  { value: 'coal', label: 'Kömür' },
-  { value: 'gold', label: 'Altın' },
   { value: 'copper', label: 'Bakır' },
-  { value: 'iron', label: 'Demir' },
-  { value: 'chrome', label: 'Krom' },
-  { value: 'marble', label: 'Mermer' },
-  { value: 'boron', label: 'Bor' },
+  { value: 'gold', label: 'Altın' },
   { value: 'silver', label: 'Gümüş' },
-  { value: 'zinc', label: 'Çinko' },
-  { value: 'lithium', label: 'Lityum' },
   { value: 'nickel', label: 'Nikel' },
+  { value: 'lithium', label: 'Lityum' },
+  { value: 'iron', label: 'Demir' },
+  { value: 'coal', label: 'Kömür' },
+  { value: 'zinc', label: 'Çinko' },
+  { value: 'lead', label: 'Kurşun' },
+  { value: 'bauxite', label: 'Boksit' },
   { value: 'rareEarth', label: 'Nadir Toprak' },
+  { value: 'phosphate', label: 'Fosfat' },
+  { value: 'uranium', label: 'Uranyum' },
+  { value: 'potash', label: 'Potas' },
+  { value: 'graphite', label: 'Grafit' },
+  { value: 'tin', label: 'Kalay' },
+  { value: 'molybdenum', label: 'Molibden' },
+  { value: 'chromium', label: 'Krom' },
+  { value: 'manganese', label: 'Manganez' },
+  { value: 'lignite', label: 'Linyit' },
+  { value: 'boron', label: 'Bor' },
+  { value: 'marble', label: 'Mermer' },
+  { value: 'chrome', label: 'Krom' },
   { value: 'other', label: 'Diğer' },
 ];
 

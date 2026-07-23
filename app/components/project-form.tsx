@@ -2,7 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatEquipmentUsd, formatSpecNumber } from '@/lib/master-data';
+import {
+  composeProjectDefaultsFromMasterData,
+  formatEquipmentUsd,
+  formatSpecNumber,
+  snapshotCatalogToProjectEquipment,
+  type CommodityCatalogItemDto,
+  type CountryCatalogItemDto,
+} from '@/lib/master-data';
 import { Header } from './header';
 import {
   MINE_TYPES, MINING_METHODS, CURRENCIES, POWER_TYPES, EQUIPMENT_CATEGORIES,
@@ -15,7 +22,8 @@ import {
   Mountain, DollarSign, Settings, Factory, Fuel, Users, Wrench,
   Bomb, CircleDot, TreePine, CreditCard, Calculator, Loader2,
   ChevronRight, ChevronLeft, Save, Plus, Trash2, Truck, HardHat,
-  Pickaxe, Gem, ChevronDown, ChevronUp, Zap, Droplets, BarChart3, Database
+  Pickaxe, Gem, ChevronDown, ChevronUp, Zap, Droplets, BarChart3, Database,
+  Globe2, Info,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -26,7 +34,6 @@ import {
   toNumber,
   coerceNumericFields,
 } from '@/lib/number-input';
-import { snapshotCatalogToProjectEquipment } from '@/lib/master-data';
 import {
   Dialog,
   DialogContent,
@@ -104,7 +111,7 @@ function FormField({ label, name, value, onChange, type = 'number', suffix, icon
 }
 
 export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
   const STEPS = [
     { id: 'general', label: t('form.step.general'), icon: Mountain },
@@ -118,6 +125,7 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
   ];
   const router = useRouter();
   const catalogImportDone = useRef(false);
+  const masterDefaultsReady = useRef(false);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [expandedEquip, setExpandedEquip] = useState<number | null>(null);
@@ -126,9 +134,14 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
   const [catalogItems, setCatalogItems] = useState<CatalogPickItem[]>([]);
   const [catalogQuery, setCatalogQuery] = useState('');
   const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
+  const [commodities, setCommodities] = useState<CommodityCatalogItemDto[]>([]);
+  const [countries, setCountries] = useState<CountryCatalogItemDto[]>([]);
+  const [masterDataReady, setMasterDataReady] = useState(false);
+  const [defaultsBanner, setDefaultsBanner] = useState('');
 
   const defaults = {
-    name: '', mineType: 'lignite', miningMethod: 'openPit', location: '',
+    name: '', mineType: '', miningMethod: 'openPit', location: '',
+    countryCode: '',
     projectLifeYears: 30, discountRate: 5.82, taxRate: 22, royaltyRate: 4,
     creditRate: 4, creditYears: 10, currency: 'USD',
     exchangeRate: 1, manualExchangeRate: false,
@@ -178,12 +191,151 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
     }
   }, [form?.miningMethod, isEditing]);
 
+  // Ensure + load Commodity / Country master data for create workflow.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await Promise.all([
+          fetch('/api/master-data/commodity/ensure').catch(() => null),
+          fetch('/api/master-data/country/ensure').catch(() => null),
+        ]);
+        const [cRes, yRes] = await Promise.all([
+          fetch('/api/master-data/commodity?pageSize=100&isActive=true'),
+          fetch('/api/master-data/country?pageSize=100&isActive=true'),
+        ]);
+        if (cancelled) return;
+        if (cRes.ok) {
+          const data = (await cRes.json()) as { items?: CommodityCatalogItemDto[] };
+          setCommodities(data.items ?? []);
+        }
+        if (yRes.ok) {
+          const data = (await yRes.json()) as { items?: CountryCatalogItemDto[] };
+          setCountries(data.items ?? []);
+        }
+      } catch {
+        // Form still works with fallback MINE_TYPES if catalogs unavailable.
+      } finally {
+        if (!cancelled) setMasterDataReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Apply Commodity + Country defaults into project scalars (create mode only).
+  // Tracks last applied codes so we only re-compose when selection changes.
+  const lastAppliedMaster = useRef<{ commodity: string; country: string }>({
+    commodity: '',
+    country: '',
+  });
+
+  useEffect(() => {
+    if (isEditing || !masterDataReady) return;
+    const commodityCode = String(form?.mineType ?? '');
+    const countryCode = String(form?.countryCode ?? '');
+    if (!commodityCode && !countryCode) {
+      setDefaultsBanner('');
+      lastAppliedMaster.current = { commodity: '', country: '' };
+      return;
+    }
+
+    if (
+      lastAppliedMaster.current.commodity === commodityCode &&
+      lastAppliedMaster.current.country === countryCode
+    ) {
+      return;
+    }
+    lastAppliedMaster.current = { commodity: commodityCode, country: countryCode };
+
+    const commodity = commodities.find((c) => c.code === commodityCode) ?? null;
+    const country = countries.find((c) => c.code === countryCode) ?? null;
+    if (!commodity && !country) return;
+
+    // Preserve explicit mining method once the user has chosen one after first apply.
+    const preserveMethod = masterDefaultsReady.current
+      ? form?.miningMethod === 'openPit' || form?.miningMethod === 'underground'
+        ? String(form.miningMethod)
+        : undefined
+      : undefined;
+
+    const composed = composeProjectDefaultsFromMasterData(commodity, country, {
+      miningMethod: preserveMethod,
+      locale: locale === 'en' ? 'en' : 'tr',
+    });
+
+    setForm((prev: Record<string, unknown>) => {
+      const next: Record<string, unknown> = { ...prev };
+      if (composed.mineType) next.mineType = composed.mineType;
+      if (composed.countryCode !== undefined) next.countryCode = composed.countryCode;
+      if (composed.unitPrice != null) next.unitPrice = composed.unitPrice;
+      if (composed.oreGrade != null) next.oreGrade = composed.oreGrade;
+      if (composed.oreGradeUnit) next.oreGradeUnit = composed.oreGradeUnit;
+      if (composed.productionUnit) next.productionUnit = composed.productionUnit;
+      if (composed.projectLifeYears != null) next.projectLifeYears = composed.projectLifeYears;
+      if (composed.miningMethod && !preserveMethod) next.miningMethod = composed.miningMethod;
+      if (composed.royaltyRate != null) next.royaltyRate = composed.royaltyRate;
+      if (composed.taxRate != null) next.taxRate = composed.taxRate;
+      if (composed.discountRate != null) next.discountRate = composed.discountRate;
+      if (composed.fuelPricePerLiter != null) next.fuelPricePerLiter = composed.fuelPricePerLiter;
+      if (composed.electricityUnitPrice != null) {
+        next.electricityUnitPrice = composed.electricityUnitPrice;
+      }
+      if (composed.currency) next.currency = composed.currency;
+      if (composed.exchangeRate != null) next.exchangeRate = composed.exchangeRate;
+      if (composed.manualExchangeRate != null) {
+        next.manualExchangeRate = composed.manualExchangeRate;
+      }
+      if (composed.rehabilitationCostPerHa != null) {
+        next.rehabilitationCostPerHa = composed.rehabilitationCostPerHa;
+      }
+      if (
+        composed.locationHint &&
+        (!prev.location || String(prev.location).trim() === '')
+      ) {
+        next.location = composed.locationHint;
+      }
+      return next;
+    });
+
+    masterDefaultsReady.current = true;
+    const parts: string[] = [];
+    if (composed.appliedFrom.commodity) parts.push(t('form.defaultsFromCommodity'));
+    if (composed.appliedFrom.country) parts.push(t('form.defaultsFromCountry'));
+    setDefaultsBanner(parts.join(' · '));
+  }, [
+    form?.mineType,
+    form?.countryCode,
+    form?.miningMethod,
+    commodities,
+    countries,
+    isEditing,
+    masterDataReady,
+    locale,
+    t,
+  ]);
+
   const handleChange = (e: any) => {
     const { name, value, type } = e?.target ?? {};
     setForm((prev: any) => ({
       ...(prev ?? {}),
       // Keep empty while editing; coerce to 0 only on submit (see handleSubmit).
       [name ?? '']: type === 'number' ? parseNumericInput(String(value ?? '')) : value,
+    }));
+  };
+
+  const handleCommodityChange = (code: string) => {
+    setForm((prev: Record<string, unknown>) => ({
+      ...prev,
+      mineType: code,
+    }));
+  };
+
+  const handleCountryChange = (code: string) => {
+    setForm((prev: Record<string, unknown>) => ({
+      ...prev,
+      countryCode: code,
     }));
   };
 
@@ -355,7 +507,17 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
 
   const handleSubmit = async () => {
     if (!(form?.name ?? '').trim()) {
-      toast.error('Proje adı zorunludur');
+      toast.error(t('form.projectNameRequired'));
+      setStep(0);
+      return;
+    }
+    if (!isEditing && !(form?.mineType ?? '').toString().trim()) {
+      toast.error(t('form.commodityRequired'));
+      setStep(0);
+      return;
+    }
+    if (!isEditing && !(form?.countryCode ?? '').toString().trim()) {
+      toast.error(t('form.countryRequired'));
       setStep(0);
       return;
     }
@@ -434,18 +596,97 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
 
   const renderStep = () => {
     switch (step) {
-      case 0: // General
+      case 0: // General — Name → Commodity → Country → Method → engineering defaults
         return (
           <div className="space-y-6">
-            {/* Mining Method Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                label={t('form.projectName')}
+                name="name"
+                value={form?.name}
+                onChange={handleChange}
+                type="text"
+                icon={Mountain}
+                placeholder={t('form.projectNamePlaceholder')}
+              />
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <Gem className="h-3.5 w-3.5" /> {t('form.commodity')}
+                </label>
+                <select
+                  name="mineType"
+                  value={form?.mineType ?? ''}
+                  onChange={(e) => handleCommodityChange(e.target.value)}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                >
+                  <option value="">{t('form.selectCommodity')}</option>
+                  {commodities.length > 0
+                    ? (
+                      <>
+                        {form?.mineType &&
+                        !commodities.some((c) => c.code === form.mineType) ? (
+                          <option value={String(form.mineType)}>
+                            {String(form.mineType)}
+                          </option>
+                        ) : null}
+                        {commodities.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {locale === 'tr' && c.nameTr ? c.nameTr : c.name}
+                            {c.symbol ? ` (${c.symbol})` : ''}
+                          </option>
+                        ))}
+                      </>
+                    )
+                    : (MINE_TYPES ?? []).map((mt: { value: string; label: string }) => (
+                        <option key={mt?.value} value={mt?.value}>{mt?.label}</option>
+                      ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <Globe2 className="h-3.5 w-3.5" /> {t('form.country')}
+                </label>
+                <select
+                  name="countryCode"
+                  value={form?.countryCode ?? ''}
+                  onChange={(e) => handleCountryChange(e.target.value)}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                >
+                  <option value="">{t('form.selectCountry')}</option>
+                  {countries.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {locale === 'tr' && c.nameTr ? c.nameTr : c.name} ({c.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <FormField
+                label={t('form.projectLife')}
+                name="projectLifeYears"
+                value={form?.projectLifeYears}
+                onChange={handleChange}
+                suffix={t('form.yearsSuffix')}
+              />
+            </div>
+
+            {defaultsBanner && !isEditing ? (
+              <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5 text-xs text-muted-foreground">
+                <Info className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" />
+                <p>
+                  <span className="font-medium text-foreground">{t('form.defaultsApplied')}</span>{' '}
+                  {defaultsBanner}. {t('form.defaultsOverrideHint')}
+                </p>
+              </div>
+            ) : null}
+
             <div>
               <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <Pickaxe className="h-4 w-4 text-primary" /> Madencilik Yöntemi Seçimi
+                <Pickaxe className="h-4 w-4 text-primary" /> {t('form.miningMethod')}
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {MINING_METHODS.map((m: any) => (
+                {MINING_METHODS.map((m: { value: string; label: string }) => (
                   <button key={m.value} type="button"
-                    onClick={() => setForm((prev: any) => ({ ...prev, miningMethod: m.value }))}
+                    onClick={() => setForm((prev: Record<string, unknown>) => ({ ...prev, miningMethod: m.value }))}
                     className={cn(
                       'flex items-center gap-3 rounded-xl border-2 p-4 transition-all text-left',
                       form?.miningMethod === m.value
@@ -460,26 +701,23 @@ export function ProjectForm({ initialData, isEditing }: ProjectFormProps) {
                     <div>
                       <p className="font-semibold text-sm">{m.label}</p>
                       <p className="text-xs text-muted-foreground">
-                        {m.value === 'openPit' ? 'Dekapaj, pasa döküm, şev yönetimi' : 'Galeri, tahkimat, havalandırma'}
+                        {m.value === 'openPit' ? t('form.methodOpenPitHint') : t('form.methodUndergroundHint')}
                       </p>
                     </div>
                   </button>
                 ))}
               </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField label={t('form.projectName')} name="name" value={form?.name} onChange={handleChange} type="text" icon={Mountain} placeholder="Örn: Linyit Madeni Açık Ocak" />
-              <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                  <Mountain className="h-3.5 w-3.5" /> Maden Tipi
-                </label>
-                <select name="mineType" value={form?.mineType ?? 'lignite'} onChange={handleChange}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
-                  {(MINE_TYPES ?? []).map((t: any) => (<option key={t?.value} value={t?.value}>{t?.label}</option>))}
-                </select>
-              </div>
-              <FormField label="Lokasyon" name="location" value={form?.location} onChange={handleChange} type="text" placeholder="Örn: Muğla, Türkiye" />
-              <FormField label="Proje Ömrü" name="projectLifeYears" value={form?.projectLifeYears} onChange={handleChange} suffix="yıl" />
+              <FormField
+                label={t('form.location')}
+                name="location"
+                value={form?.location}
+                onChange={handleChange}
+                type="text"
+                placeholder={t('form.locationPlaceholder')}
+              />
             </div>
             <div className="mt-4">
               <LocationSearch

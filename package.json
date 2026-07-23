@@ -3,10 +3,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && npx prisma db push && npx tsx --require dotenv/config scripts/seed-equipment-catalog.ts && next build",
+    "build": "prisma generate && npx prisma db push && npx tsx --require dotenv/config scripts/seed-equipment-catalog.ts && npx tsx --require dotenv/config scripts/seed-commodity-country-catalogs.ts && next build",
     "start": "next start",
     "lint": "next lint",
-    "seed:equipment": "tsx --require dotenv/config scripts/seed-equipment-catalog.ts"
+    "seed:equipment": "tsx --require dotenv/config scripts/seed-equipment-catalog.ts",
+    "seed:commodity-country": "tsx --require dotenv/config scripts/seed-commodity-country-catalogs.ts"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config scripts/safe-seed.ts"

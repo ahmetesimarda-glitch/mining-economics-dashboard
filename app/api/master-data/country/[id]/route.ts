@@ -1,0 +1,82 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import {
+  normalizeCountryCatalogInput,
+  toCountryCatalogPrismaData,
+} from '@/lib/master-data';
+
+export const dynamic = 'force-dynamic';
+
+type RouteContext = { params: { id: string } };
+
+export async function GET(_request: NextRequest, context: RouteContext) {
+  try {
+    const item = await prisma.countryCatalogItem.findUnique({
+      where: { id: context.params.id },
+    });
+    if (!item) {
+      return NextResponse.json({ error: 'Ülke bulunamadı' }, { status: 404 });
+    }
+    return NextResponse.json(item);
+  } catch (error: unknown) {
+    console.error('Country catalog get:', error);
+    const message = error instanceof Error ? error.message : 'Okunamadı';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest, context: RouteContext) {
+  try {
+    const existing = await prisma.countryCatalogItem.findUnique({
+      where: { id: context.params.id },
+      select: { id: true, code: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: 'Ülke bulunamadı' }, { status: 404 });
+    }
+
+    const body: unknown = await request.json();
+    const { data, error } = normalizeCountryCatalogInput(body);
+    if (error || !data) {
+      return NextResponse.json({ error: error ?? 'Geçersiz veri' }, { status: 400 });
+    }
+
+    if (data.code !== existing.code) {
+      const clash = await prisma.countryCatalogItem.findUnique({
+        where: { code: data.code },
+        select: { id: true },
+      });
+      if (clash) {
+        return NextResponse.json({ error: 'Bu kod zaten kullanılıyor' }, { status: 409 });
+      }
+    }
+
+    const item = await prisma.countryCatalogItem.update({
+      where: { id: context.params.id },
+      data: toCountryCatalogPrismaData(data),
+    });
+    return NextResponse.json(item);
+  } catch (error: unknown) {
+    console.error('Country catalog update:', error);
+    const message = error instanceof Error ? error.message : 'Güncellenemedi';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(_request: NextRequest, context: RouteContext) {
+  try {
+    const existing = await prisma.countryCatalogItem.findUnique({
+      where: { id: context.params.id },
+      select: { id: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: 'Ülke bulunamadı' }, { status: 404 });
+    }
+    await prisma.countryCatalogItem.delete({ where: { id: context.params.id } });
+    return NextResponse.json({ ok: true });
+  } catch (error: unknown) {
+    console.error('Country catalog delete:', error);
+    const message = error instanceof Error ? error.message : 'Silinemedi';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

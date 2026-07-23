@@ -107,7 +107,7 @@ nextjs_space/
 
 > **Preserve this structure.** Do not relocate the calculation engine, API route files, or Prisma schema. The folder conventions are load-bearing for both the Abacus build and the GitHub/Docker self-host path.
 
-Master Data UI/API live under `app/master-data/**` and `app/api/master-data/**`. Only the Equipment catalog is implemented; other catalog kinds are reserved in `lib/master-data/catalog-kinds.ts`.
+Master Data UI/API live under `app/master-data/**` and `app/api/master-data/**`. Implemented catalogs: Equipment, Commodity, Country. Other kinds remain reserved in `lib/master-data/catalog-kinds.ts`.
 
 ---
 
@@ -131,15 +131,17 @@ Master Data UI/API live under `app/master-data/**` and `app/api/master-data/**`.
 16. **Mining Market Insights**: placeholder news architecture on the dashboard (`lib/news/`).
 15. **Internationalization**: full TR/EN switching via `lib/i18n`.
 16. **Master Data — Equipment Catalog** (`/master-data/equipment`, `/api/master-data/equipment`): commercial CRUD catalog (~445 OEM seed rows) with OEM-aware search, manufacturer/category/power/active filters, sort + page size, table/card views, detail drawer, facets endpoint, and snapshot Add-to-Project into the fleet. Seed architecture lives under `lib/master-data/seed/` (regenerable via `scripts/generate-equipment-catalog.py`).
-17. **Public Demo Experience**: first-visit welcome dialog, **eight commercial demo projects** (copper/Chile, gold/Türkiye, iron/Brazil, lithium/Argentina, nickel/Canada, coal/Australia, zinc/Peru, rare earth/Sweden), Demo badge, portfolio gallery cards, and browser localStorage for welcome dismissal / last opened / visitor-created project ids (auth-free). Seeded via reusable `lib/demo/` catalog + `ensureAllDemoProjects`.
+17. **Master Data — Commodity Catalog** (`/master-data/commodity`, `/api/master-data/commodity`): engineering defaults per commodity (price, grade range, recovery, mine life, processing, royalty, …). Seeded via `buildCommodityCatalogSeedRows()` / `seedCommodityCatalogIdempotent`; production self-heal at `GET /api/master-data/commodity/ensure`.
+18. **Master Data — Country Catalog** (`/master-data/country`, `/api/master-data/country`): jurisdiction defaults (tax, royalty, discount, diesel, electricity, FX, rehab, risk). Seeded via `buildCountryCatalogSeedRows()` / `seedCountryCatalogIdempotent`; ensure at `GET /api/master-data/country/ensure`. New-project form composes Commodity + Country via `composeProjectDefaultsFromMasterData` (snapshot into project scalars; no live FK).
+19. **Public Demo Experience**: first-visit welcome dialog, **eight commercial demo projects** (copper/Chile, gold/Türkiye, iron/Brazil, lithium/Argentina, nickel/Canada, coal/Australia, zinc/Peru, rare earth/Sweden), Demo badge, portfolio gallery cards, and browser localStorage for welcome dismissal / last opened / visitor-created project ids (auth-free). Seeded via reusable `lib/demo/` catalog + `ensureAllDemoProjects`.
 
 ---
 
 ## 5. Data Model (Prisma)
 
-See `prisma/schema.prisma` for the authoritative definitions. Eight models:
+See `prisma/schema.prisma` for the authoritative definitions. Models:
 
-- **`MiningProject`** — the root aggregate (~90 fields): identity/metadata, economic parameters (discount rate, tax rate, royalty rate, credit terms, unit price, annual production, project life…), CAPEX/OPEX summary fields, environmental parameters, financing parameters, geographic coordinates, and **stored calculated results** (NPV, IRR, payback, etc.). Indexed on `status`.
+- **`MiningProject`** — the root aggregate (~90 fields): identity/metadata, economic parameters (discount rate, tax rate, royalty rate, credit terms, unit price, annual production, project life…), CAPEX/OPEX summary fields, environmental parameters, financing parameters, geographic coordinates, optional `countryCode` snapshot, and **stored calculated results** (NPV, IRR, payback, etc.). Indexed on `status`. `mineType` stores the commodity catalog `code` snapshot.
 - **`CashFlowYear`** — one row per project year; `@@unique([projectId, year])`. Stores revenue, costs, depreciation, tax, net & discounted cash flow.
 - **`CapexItem`** — individual capital expenditure line items.
 - **`OpexItem`** — individual operating expenditure line items.
@@ -148,8 +150,10 @@ See `prisma/schema.prisma` for the authoritative definitions. Eight models:
 - **`ByProduct`** — by-product revenue contributors.
 - **`MethodSpecificCost`** — mining-method-specific cost items.
 - **`EquipmentCatalogItem`** — Master Data equipment catalog (standalone; not cascade-owned by a project). Seeded from major mining OEMs via `buildEquipmentCatalogSeedRows()`; projects snapshot into `Equipment`.
+- **`CommodityCatalogItem`** — Master Data commodity catalog (standalone). Engineering defaults; projects snapshot into `MiningProject` scalars (`mineType`, `unitPrice`, grade, life, …).
+- **`CountryCatalogItem`** — Master Data country catalog (standalone). Fiscal/cost/risk defaults; projects snapshot into `MiningProject` (`taxRate`, `royaltyRate`, `discountRate`, energy, FX, `countryCode`, …).
 
-All child models of `MiningProject` reference it and **cascade-delete** when the parent project is deleted. `projectId` is indexed on child tables.
+All child models of `MiningProject` reference it and **cascade-delete** when the parent project is deleted. `projectId` is indexed on child tables. Master Data catalogs have **no** FK from projects (snapshot-only).
 
 ---
 
