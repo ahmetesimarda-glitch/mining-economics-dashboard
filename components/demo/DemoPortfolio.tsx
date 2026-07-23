@@ -8,9 +8,15 @@ import { useLanguage } from '@/lib/i18n/context';
 
 interface DemoPortfolioProps {
   economicsById?: Record<string, DemoEconomics>;
+  selectedIds?: ReadonlySet<string>;
+  onToggleSelect?: (id: string) => void;
 }
 
-export function DemoPortfolio({ economicsById = {} }: DemoPortfolioProps) {
+export function DemoPortfolio({
+  economicsById = {},
+  selectedIds,
+  onToggleSelect,
+}: DemoPortfolioProps) {
   const { t } = useLanguage();
 
   return (
@@ -43,6 +49,8 @@ export function DemoPortfolio({ economicsById = {} }: DemoPortfolioProps) {
             meta={meta}
             economics={economicsById[meta.id]}
             index={index}
+            selected={selectedIds?.has(meta.id) ?? false}
+            onToggleSelect={onToggleSelect}
           />
         ))}
       </div>

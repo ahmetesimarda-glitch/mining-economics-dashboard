@@ -19,6 +19,7 @@ import {
   type DemoCardMeta,
 } from '@/lib/demo/portfolio-meta';
 import { setLastOpenedProjectId } from '@/lib/demo/storage';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export interface DemoEconomics {
   npv?: number | null;
@@ -29,9 +30,17 @@ interface DemoProjectCardProps {
   meta: DemoCardMeta;
   economics?: DemoEconomics;
   index: number;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
-export function DemoProjectCard({ meta, economics, index }: DemoProjectCardProps) {
+export function DemoProjectCard({
+  meta,
+  economics,
+  index,
+  selected = false,
+  onToggleSelect,
+}: DemoProjectCardProps) {
   const { t } = useLanguage();
   const accent = DEMO_ACCENT_STYLES[meta.accent];
   const npv = economics?.npv ?? 0;
@@ -58,16 +67,36 @@ export function DemoProjectCard({ meta, economics, index }: DemoProjectCardProps
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index, 8) * 0.06, duration: 0.35 }}
     >
-      <button
-        type="button"
-        onClick={open}
+      <div
         className={cn(
           'group relative w-full overflow-hidden rounded-xl border border-border/50 bg-card text-left transition-all duration-300',
           accent.ring,
-          'hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60'
+          selected && 'border-primary/40 ring-1 ring-primary/20',
+          'hover:shadow-xl'
         )}
         style={{ boxShadow: 'var(--shadow-md)' }}
       >
+        {onToggleSelect ? (
+          <div
+            className="absolute top-3 left-3 z-10"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <Checkbox
+              checked={selected}
+              onCheckedChange={() => onToggleSelect(meta.id)}
+              aria-label={t('dash.selectProject')}
+              className="bg-background/80 backdrop-blur-sm"
+            />
+          </div>
+        ) : null}
+        <button
+          type="button"
+          onClick={open}
+          className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-xl"
+        >
         <div
           className={cn(
             'relative h-24 bg-gradient-to-br',
@@ -154,7 +183,8 @@ export function DemoProjectCard({ meta, economics, index }: DemoProjectCardProps
             </div>
           </div>
         </div>
-      </button>
+        </button>
+      </div>
     </motion.div>
   );
 }

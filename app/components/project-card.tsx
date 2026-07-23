@@ -8,20 +8,44 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/i18n/context';
 import { DemoBadge } from '@/components/demo/DemoBadge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   isDemoProjectId,
   setLastOpenedProjectId,
   trackCreatedProjectId,
 } from '@/lib/demo';
 
-interface ProjectCardProps {
-  project: any;
-  index: number;
-  onDelete?: (id: string) => void;
-  onDuplicate?: (project: any) => void;
+interface DashboardCardProject {
+  id?: string;
+  name?: string;
+  npv?: number | null;
+  irr?: number | null;
+  paybackPeriod?: number | null;
+  totalCapex?: number | null;
+  mineType?: string;
+  miningMethod?: string;
+  location?: string;
 }
 
-export function ProjectCard({ project, index, onDelete, onDuplicate }: ProjectCardProps) {
+interface ProjectCardProps {
+  project: DashboardCardProject;
+  index: number;
+  onDelete?: (id: string) => void;
+  onDuplicate?: (project: DashboardCardProject) => void;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
+}
+
+export type { DashboardCardProject };
+
+export function ProjectCard({
+  project,
+  index,
+  onDelete,
+  onDuplicate,
+  selected = false,
+  onToggleSelect,
+}: ProjectCardProps) {
   const [duplicating, setDuplicating] = useState(false);
   const p = project ?? {};
   const npv = p?.npv ?? 0;
@@ -47,7 +71,7 @@ export function ProjectCard({ project, index, onDelete, onDuplicate }: ProjectCa
       const res = await fetch(`/api/projects/${p?.id}`, { method: 'DELETE' });
       if (res?.ok) {
         toast.success(t('card.deleted'));
-        onDelete?.(p?.id);
+        onDelete?.(p?.id ?? '');
       } else if (res?.status === 403) {
         toast.error(t('demo.cannotDelete'));
       }
@@ -65,7 +89,7 @@ export function ProjectCard({ project, index, onDelete, onDuplicate }: ProjectCa
     try {
       const res = await fetch(`/api/projects/${p?.id}/duplicate`, { method: 'POST' });
       if (res?.ok) {
-        const newProject = await res?.json();
+        const newProject = (await res?.json()) as DashboardCardProject;
         if (newProject?.id) trackCreatedProjectId(newProject.id);
         toast.success(t('card.duplicated'));
         onDuplicate?.(newProject);
@@ -90,6 +114,12 @@ export function ProjectCard({ project, index, onDelete, onDuplicate }: ProjectCa
     window.location.href = `/projects/${p?.id}/edit`;
   };
 
+  const handleSelectClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (p?.id) onToggleSelect?.(p.id);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -100,11 +130,34 @@ export function ProjectCard({ project, index, onDelete, onDuplicate }: ProjectCa
         onClick={handleCardClick}
         role="button"
         tabIndex={0}
-        className="group relative overflow-hidden rounded-xl bg-card border border-border/50 p-5 transition-all duration-300 hover:border-primary/30 hover:shadow-xl cursor-pointer"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleCardClick();
+          }
+        }}
+        className={cn(
+          'group relative overflow-hidden rounded-xl bg-card border border-border/50 p-5 transition-all duration-300 hover:border-primary/30 hover:shadow-xl cursor-pointer',
+          selected && 'border-primary/40 ring-1 ring-primary/20'
+        )}
         style={{ boxShadow: 'var(--shadow-md)' }}
       >
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
+            {onToggleSelect && p?.id ? (
+              <div
+                className="pt-0.5"
+                onClick={handleSelectClick}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
+                <Checkbox
+                  checked={selected}
+                  onCheckedChange={() => onToggleSelect(p.id!)}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={t('dash.selectProject')}
+                />
+              </div>
+            ) : null}
             <div
               className={cn(
                 'flex h-10 w-10 items-center justify-center rounded-lg',
@@ -121,7 +174,7 @@ export function ProjectCard({ project, index, onDelete, onDuplicate }: ProjectCa
                 {isDemo ? <DemoBadge /> : null}
               </div>
               <p className="text-xs text-muted-foreground">
-                {getMineTypeLabel(p?.mineType)} • {getMiningMethodLabel(p?.miningMethod)}
+                {getMineTypeLabel(p?.mineType ?? '')} • {getMiningMethodLabel(p?.miningMethod ?? '')}
                 {p?.location ? ` • ${p.location}` : ''}
               </p>
             </div>

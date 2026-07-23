@@ -83,19 +83,22 @@ nextjs_space/
 ├── components/
 │   ├── ui/                       # Radix-based reusable primitives (button, card, dialog, tabs, ...)
 │   ├── master-data/equipment/    # Equipment Catalog UI pieces (table, filters, dialog, form)
-│   ├── header.tsx                # App header / navigation
-│   ├── project-card.tsx          # Project list card
+│   ├── country-intelligence.tsx  # Country Intelligence panel (project detail)
+│   ├── header.tsx                # App header / enterprise nav (Catalogs ▼)
+│   ├── project-card.tsx          # Project list card (portfolio selection checkbox)
 │   ├── ai-analysis-panel.tsx     # AI analysis UI (streaming)
 │   └── theme-provider.tsx        # next-themes wrapper
 ├── lib/
 │   ├── calculations.ts           # ★ CORE FINANCIAL ENGINE — all economic formulas
 │   ├── decision-insights.ts      # Read-only executive interpretation of existing outputs
+│   ├── country-intelligence.ts   # Country Intelligence profiles (no invented values)
+│   ├── dashboard/                # Portfolio selection persistence + KPI aggregation
 │   ├── market-reference.ts       # Equipment price refs, emission factors, commodity references
 │   ├── prisma.ts                 # Prisma client singleton
 │   ├── utils.ts                  # cn() and shared helpers
 │   ├── types.ts                  # Shared TS types
 │   ├── i18n/                     # translations.ts (TR/EN) + provider/hook
-│   └── master-data/              # types, mapper, validation, seed (catalog kinds registry)
+│   └── master-data/              # types, mapper, validation, seed, nav-catalogs registry
 ├── prisma/
 │   ├── schema.prisma             # MiningProject aggregate + EquipmentCatalogItem
 │   └── migrations/               # Prisma Migrate history
@@ -116,7 +119,7 @@ Master Data UI/API live under `app/master-data/**` and `app/api/master-data/**`.
 
 ## 4. Main Features / Modules
 
-1. **Dashboard** (`app/page.tsx` → `DashboardClient`): lists all projects with headline metrics (NPV, IRR, status), entry point to create / open / compare projects.
+1. **Dashboard** (`app/page.tsx` → `DashboardClient`): lists projects with selectable portfolio KPIs (Total Projects, Average NPV/IRR, Total CAPEX) computed **only from checkbox-selected projects**; selection persists in localStorage. Entry point to create / open / compare projects.
 2. **Project CRUD** (`app/projects/*`, `/api/projects/*`): create, edit, view, delete, and **duplicate** a mining project with ~90 economic/technical parameters plus child collections (CAPEX items, OPEX items, equipment, personnel, by-products, method-specific costs).
 3. **Economic Analysis** (`lib/calculations.ts`): server-side computation of full year-by-year cash flow, NPV, IRR, payback period, breakeven price. Recomputed on every create/update.
 4. **Sensitivity Analysis** (`/api/projects/[id]/sensitivity`): NPV/IRR response to ± variation of key drivers.
@@ -136,8 +139,9 @@ Master Data UI/API live under `app/master-data/**` and `app/api/master-data/**`.
 18. **Internationalization**: full TR/EN switching via `lib/i18n`.
 19. **Master Data — Equipment Catalog** (`/master-data/equipment`, `/api/master-data/equipment`): commercial CRUD catalog (~445 OEM seed rows) with OEM-aware search, manufacturer/category/power/active filters, sort + page size, table/card views, detail drawer, facets endpoint, and snapshot Add-to-Project into the fleet. Seed architecture lives under `lib/master-data/seed/` (regenerable via `scripts/generate-equipment-catalog.py`).
 20. **Master Data — Commodity Catalog** (`/master-data/commodity`, `/api/master-data/commodity`): engineering defaults per commodity (price, grade range, recovery, mine life, processing, royalty, …). Seeded via `buildCommodityCatalogSeedRows()` / `seedCommodityCatalogIdempotent`; production self-heal at `GET /api/master-data/commodity/ensure`.
-21. **Master Data — Country Catalog** (`/master-data/country`, `/api/master-data/country`): jurisdiction defaults (tax, royalty, discount, diesel, electricity, FX, rehab, risk). Seeded via `buildCountryCatalogSeedRows()` / `seedCountryCatalogIdempotent`; ensure at `GET /api/master-data/country/ensure`. New-project form composes Commodity + Country via `composeProjectDefaultsFromMasterData` (snapshot into project scalars; no live FK).
+21. **Master Data — Country Catalog** (`/master-data/country`, `/api/master-data/country`): jurisdiction defaults (tax, royalty, discount, diesel, electricity, FX, rehab, risk). Seeded via `buildCountryCatalogSeedRows()` / `seedCountryCatalogIdempotent`; ensure at `GET /api/master-data/country/ensure`. New-project form composes Commodity + Country via `composeProjectDefaultsFromMasterData` (snapshot into project scalars; no live FK). **Country Intelligence** (`lib/country-intelligence.ts`, `components/country-intelligence.tsx`) shows a read-only jurisdiction panel on project detail when `countryCode` is set — curated reference facts + catalog enrichment; missing fields show “Not Available” (never invented).
 22. **Public Demo Experience**: first-visit welcome dialog, **eight commercial demo projects** (copper/Chile, gold/Türkiye, iron/Brazil, lithium/Argentina, nickel/Canada, coal/Australia, zinc/Peru, rare earth/Sweden), Demo badge, portfolio gallery cards, and browser localStorage for welcome dismissal / last opened / visitor-created project ids (auth-free). Seeded via reusable `lib/demo/` catalog + `ensureAllDemoProjects`.
+23. **Enterprise navigation**: primary nav is Dashboard / New Project / Compare / Decision Insights / Market / **Catalogs ▼** (Equipment, Commodity, Country via `lib/master-data/nav-catalogs.ts`) / Language / Theme — accessible Radix dropdown, keyboard + outside-click close, active-page highlight.
 
 ---
 

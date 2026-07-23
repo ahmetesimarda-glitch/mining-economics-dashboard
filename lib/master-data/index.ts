@@ -104,3 +104,9 @@ export type {
   ProjectMasterDefaults,
   ProjectDefaultFormKey,
 } from './project-defaults';
+
+export {
+  NAV_IMPLEMENTED_CATALOGS,
+  isCatalogNavPath,
+} from './nav-catalogs';
+export type { NavCatalogItem } from './nav-catalogs';
