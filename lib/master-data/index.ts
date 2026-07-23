@@ -59,3 +59,4 @@ export {
 export { buildEquipmentCatalogSeedRows } from './equipment-seed-data';
 export type { EquipmentCatalogSeedRow } from './equipment-seed-data';
 export { seedEquipmentCatalogIdempotent } from './equipment-seed';
+export type { EquipmentCatalogSeedResult } from './equipment-seed';

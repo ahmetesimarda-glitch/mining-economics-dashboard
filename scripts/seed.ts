@@ -917,8 +917,10 @@ const PROJECTS: SeedProject[] = [
 
 
 async function seedEquipmentCatalog(): Promise<void> {
-  const { upserted } = await seedEquipmentCatalogIdempotent(prisma);
-  console.log(`\u2705 Equipment catalog seeded (idempotent upsert): ${upserted} items`);
+  const result = await seedEquipmentCatalogIdempotent(prisma);
+  console.log(
+    `\u2705 Equipment catalog seeded (idempotent): total=${result.total} created=${result.created} updated=${result.updated} skippedManual=${result.skippedManual}`
+  );
 }
 
 /**

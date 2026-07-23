@@ -59,9 +59,30 @@ export function EquipmentCatalogClient() {
 
   const [deleteTarget, setDeleteTarget] = useState<EquipmentCatalogItemDto | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [catalogReady, setCatalogReady] = useState(false);
 
   useEffect(() => {
     void trackAnalyticsEvent('equipment_viewed');
+  }, []);
+
+  // Production self-heal: upsert master dataset once before listing.
+  // Deploy historically ran `db push` without `db seed`, so a lone manual
+  // test row could leave the commercial catalog empty until this ensure runs.
+  useEffect(() => {
+    let cancelled = false;
+    const ensure = async () => {
+      try {
+        await fetch('/api/master-data/equipment/ensure');
+      } catch {
+        // Listing may still work if data already exists.
+      } finally {
+        if (!cancelled) setCatalogReady(true);
+      }
+    };
+    void ensure();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const categoryLabel = useCallback(
@@ -117,12 +138,14 @@ export function EquipmentCatalogClient() {
   }, [page, pageSize, sort, order, q, category, manufacturer, powerType, activeFilter, t]);
 
   useEffect(() => {
+    if (!catalogReady) return;
     void loadFacets();
-  }, [loadFacets]);
+  }, [catalogReady, loadFacets]);
 
   useEffect(() => {
+    if (!catalogReady) return;
     void load();
-  }, [load]);
+  }, [catalogReady, load]);
 
   // Debounced live search — keeps Enter/button search, adds typing UX.
   useEffect(() => {
